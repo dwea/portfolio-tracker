@@ -1,0 +1,15 @@
+node_modules/
+dist/
+logs/*.log
+data/*.json
+*.log
+
+# Environment variables
+.env
+
+# Keep directory structure
+!logs/.gitkeep
+!data/.gitkeep
+
+# OS files
+.DS_Store

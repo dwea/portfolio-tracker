@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Portfolio Tracker</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    /* ── Reset & Base ── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #111; font-size: 13px; line-height: 1.3; overflow-x: hidden; }
+
+    /* ── Tab Navigation ── */
+    #tab-nav { background: #fff; border-bottom: 2px solid #e5e7eb; padding: 0.4rem 1rem 0; display: flex; gap: 0.1rem; align-items: center; }
+    #tab-nav .logout-link { margin-left: auto; font-size: 0.72rem; color: #999; text-decoration: none; padding: 0.2rem 0.4rem; border-radius: 3px; margin-bottom: 0.25rem; }
+    #tab-nav .logout-link:hover { color: #555; background: #f3f4f6; }
+    .tab-btn { padding: 0.45rem 1.1rem; border: none; background: none; font-family: inherit; font-size: 0.85rem; font-weight: 500; color: #666; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+    .tab-btn:hover:not(.active) { color: #333; }
+
+    /* ── Editor Styles ── */
+    .app { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    h1 { font-size: 1.2rem; font-weight: 600; }
+    .subtitle { font-size: 0.8rem; margin-bottom: 0.75rem; }
+    .section { border: 1px solid #ddd; border-radius: 4px; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; background: #f0f0f0; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+    .section-title { font-size: 0.85rem; font-weight: 600; }
+    label { font-size: 0.7rem; font-weight: 500; }
+    input, select { border: 1px solid #ccc; border-radius: 3px; padding: 0.25rem 0.4rem; font-family: inherit; font-size: 13px; color: #111; background: #fff; }
+    input:focus, select:focus { outline: none; border-color: #2563eb; }
+    input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
+    .btn { padding: 0.2rem 0.6rem; border: none; border-radius: 3px; font-family: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; white-space: nowrap; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #f3f4f6; color: #111; border: 1px solid #ccc; }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .btn-danger { background: #dc2626; color: #fff; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-sm { padding: 0.15rem 0.4rem; font-size: 0.7rem; }
+    .account-card { border: 1px solid #ddd; border-radius: 4px; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; background: #e8e8e8; }
+    .account-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; }
+    .account-header h3 { font-size: 0.85rem; font-weight: 600; }
+    .row { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+    .row + .row { margin-top: 0.25rem; }
+    .field { display: flex; flex-direction: column; gap: 1px; }
+    .field input, .field select { width: 100%; }
+    .holding-header { display: flex; gap: 0.35rem; padding: 0 0 0.15rem 0.5rem; border-left: 2px solid transparent; font-size: 0.65rem; font-weight: 500; color: #555; }
+    .hh-name { width: 76px; }
+    .hh-shares { width: 46px; }
+    .hh-price { width: 58px; text-align: right; }
+    .hh-wt    { width: 36px; text-align: right; }
+    .hh-targ  { width: 82px; text-align: center; }
+    .hh-diff  { width: 42px; text-align: right; }
+    .hh-action { flex: 1; }
+    .hh-btn { width: 22px; }
+    .holding-row { display: flex; gap: 0.35rem; align-items: center; padding: 0.15rem 0 0.15rem 0.5rem; border-left: 2px solid #2563eb; margin-bottom: 0.15rem; }
+    .hi-name { width: 76px; flex-shrink: 0; }
+    .hi-shares { width: 46px; flex-shrink: 0; }
+    .hi-stat { font-size: 0.7rem; color: #555; text-align: right; white-space: nowrap; flex-shrink: 0; }
+    .hi-price { width: 58px; }
+    .hi-wt    { width: 36px; }
+    .hi-targ  { width: 82px; display: flex; align-items: center; gap: 2px; }
+    .hi-diff  { width: 42px; }
+    .hi-action { flex: 1; min-width: 160px; font-size: 0.7rem; white-space: nowrap; flex-shrink: 0; }
+    .hi-adj { font-size: 0.65rem; padding: 0 3px; line-height: 1.4; border: 1px solid #d1d5db; border-radius: 3px; background: #f9fafb; cursor: pointer; flex-shrink: 0; color: #555; }
+    .hi-adj:hover { background: #e5e7eb; }
+    .hi-info { font-size: 0.65rem; padding: 0 4px; line-height: 1.4; border: 1px solid #c7d2fe; border-radius: 3px; background: #eef2ff; cursor: pointer; color: #4338ca; flex-shrink: 0; }
+    .hi-info:hover { background: #e0e7ff; }
+    .ga-check-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; }
+    .ga-check-wrap span { font-size: 0.6rem; color: #555; white-space: nowrap; }
+    .schedule-grid { display: flex; flex-direction: column; gap: 0.15rem; }
+    .schedule-grid-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0.25rem; border-radius: 3px; }
+    .schedule-grid-row:hover { background: #e8e8e8; }
+    .schedule-grid-row.checked { background: #e8f0fe; }
+    .schedule-grid-row label.hour-label { width: 65px; font-size: 0.75rem; font-weight: 400; cursor: pointer; }
+    .schedule-grid-row select { font-size: 0.7rem; padding: 0.15rem 0.3rem; }
+    .schedule-days-toggle { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; }
+    .schedule-days-toggle label { font-size: 0.75rem; cursor: pointer; }
+    .recipient-row { display: flex; gap: 0.4rem; align-items: flex-end; margin-bottom: 0.2rem; }
+    .recipient-row input { flex: 1; }
+    input[type="checkbox"] { width: 0.85rem; height: 0.85rem; accent-color: #2563eb; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #666; }
+    .empty-state p { font-size: 0.85rem; }
+    .empty-state .row { justify-content: center; }
+    .sticky-header { position: sticky; top: 0; z-index: 100; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.75rem; flex-wrap: wrap; gap: 0.4rem; border-bottom: 1px solid #e5e7eb; }
+    .top-bar-actions { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+    .editor-tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 1px solid #ddd; background: #fff; }
+    .editor-tab-btn { padding: 0.35rem 0.9rem; border: none; background: none; font-family: inherit; font-size: 0.8rem; font-weight: 500; color: #666; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .editor-tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+    .editor-tab-btn:hover:not(.active) { color: #333; background: #f9f9f9; border-radius: 3px 3px 0 0; }
+    .preview-mode-tabs { display: flex; gap: 0.25rem; margin-bottom: 0.5rem; }
+    .preview-tab { padding: 0.2rem 0.55rem; border: 1px solid #ccc; border-radius: 3px; font-size: 0.75rem; font-weight: 500; cursor: pointer; background: #f3f4f6; color: #555; }
+    .preview-tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .preview-bubble { background: #e5e5ea; border-radius: 12px 12px 4px 12px; padding: 0.65rem 0.9rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 0.78rem; white-space: pre-wrap; color: #111; max-width: 380px; line-height: 1.55; }
+    .preview-label { font-size: 0.65rem; color: #888; margin-bottom: 0.2rem; }
+    .btn-preview-tall { padding: 0.5rem 0.8rem; height: 2.2rem; font-size: 0.75rem; }
+
+    /* ── Responsive: holding rows scroll, preview grid reflows ── */
+    .holding-scroll-wrap { overflow-x: auto; margin: 0 -0.1rem; }
+    .holding-min-width { min-width: 510px; }
+    .preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; align-items: start; }
+
+    /* ── Responsive: small screens ── */
+    @media (max-width: 600px) {
+      .app { padding: 0.5rem; }
+      #tab-nav { padding: 0.3rem 0.5rem 0; }
+      .section { padding: 0.4rem 0.5rem; }
+      .account-card { padding: 0.4rem 0.5rem; }
+      #panel-schedules { padding: 6px; }
+      #panel-schedules .sched-section { padding: 8px 10px; }
+    }
+
+    /* ── Schedules Panel (scoped to avoid conflicts with editor styles) ── */
+    #panel-schedules {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: calc(100vh - 41px);
+      padding: 8px;
+    }
+    #panel-schedules .sched-container { max-width: 1200px; margin: 0 auto; }
+    #panel-schedules .sched-section {
+      background: white;
+      padding: 10px 12px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      margin-bottom: 8px;
+    }
+    #panel-schedules .sched-section h2 { color: #333; font-size: 13px; margin: 0; }
+    #panel-schedules .sched-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    #panel-schedules table { width: 100%; border-collapse: collapse; }
+    #panel-schedules th { background: #f8f9fa; padding: 5px 8px; text-align: left; font-weight: 600; color: #333; border-bottom: 2px solid #dee2e6; font-size: 12px; }
+    #panel-schedules td { padding: 5px 8px; border-bottom: 1px solid #dee2e6; color: #666; font-size: 12px; }
+    #panel-schedules tr:hover { background: #f8f9fa; }
+    #panel-schedules .sched-status { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+    #panel-schedules .sched-status.enabled { background: #d4edda; color: #155724; }
+    #panel-schedules .sched-status.disabled { background: #f8d7da; color: #721c24; }
+    #panel-schedules .sched-status.success { background: #d4edda; color: #155724; }
+    #panel-schedules .sched-status.error { background: #f8d7da; color: #721c24; }
+    #panel-schedules .sched-status.running { background: #fff3cd; color: #856404; }
+    #panel-schedules .sched-btn { padding: 4px 10px; background: #667eea; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: 500; transition: background 0.2s; }
+    #panel-schedules .sched-btn:hover { background: #5568d3; }
+    #panel-schedules .sched-btn-sm { padding: 3px 8px; font-size: 11px; }
+    #panel-schedules .sched-loading { text-align: center; padding: 20px; color: #666; }
+    #panel-schedules .sched-timestamp { font-size: 11px; color: #999; }
+    #panel-schedules .sched-empty { text-align: center; padding: 20px; color: #999; }
+
+    /* ── Report cards (grouped view) ── */
+    #panel-schedules .sched-report-card { border: 1px solid #e0e4f0; border-radius: 4px; overflow: visible; margin-bottom: 8px; background: #fff; }
+    #panel-schedules .sched-report-card .sched-table-wrap { overflow-x: auto; }
+    #panel-schedules .sched-report-card:last-child { margin-bottom: 0; }
+    #panel-schedules .sched-report-name { background: #f4f6fb; padding: 5px 10px; font-weight: 600; font-size: 13px; color: #333; border-bottom: 1px solid #e0e4f0; }
+    #panel-schedules .sched-report-card th { background: #fff; padding: 4px 8px; font-size: 11px; color: #888; font-weight: 500; border-bottom: 1px solid #e9ecf2; text-transform: uppercase; letter-spacing: 0.03em; }
+    #panel-schedules .sched-report-card td { padding: 5px 8px; border-bottom: 1px solid #f1f3f8; color: #444; font-size: 12px; white-space: nowrap; }
+    #panel-schedules .sched-report-card tbody tr:last-child td { border-bottom: none; }
+    #panel-schedules .sched-report-card tr:hover { background: #f9fafd; }
+    #panel-schedules .sched-run-ok { color: #16a34a; font-size: 11px; }
+    #panel-schedules .sched-run-err { color: #dc2626; font-size: 11px; }
+    #panel-schedules .sched-run-pending { color: #d97706; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <!-- Tab Navigation -->
+  <div id="tab-nav">
+    <button class="tab-btn active" id="tab-btn-editor" onclick="switchTab('editor')">Editor</button>
+    <button class="tab-btn" id="tab-btn-schedules" onclick="switchTab('schedules')">Schedules</button>
+    <a class="logout-link" href="/logout">Sign out</a>
+  </div>
+
+  <!-- Editor Panel -->
+  <div id="panel-editor">
+    <div id="root"></div>
+  </div>
+
+  <!-- Schedules Panel -->
+  <div id="panel-schedules" style="display:none">
+    <div class="sched-container">
+
+      <div class="sched-section">
+        <div class="sched-section-header">
+          <h2>All Scheduled Reports</h2>
+          <button class="sched-btn sched-btn-sm" onclick="loadSchedules()">🔄 Refresh</button>
+        </div>
+        <div style="overflow-x: auto;"><div id="schedulesContent" class="sched-loading">Loading schedules...</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- React App (Editor) -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Format options for schedule and preview dropdowns
+    const FORMAT_OPTIONS = [
+      { value: 'detailed',  label: 'Detailed' },
+      { value: 'short',     label: 'Short' },
+      { value: 'rebalance', label: 'Rebalance' },
+      { value: 'charts',    label: 'Charts' },
+    ];
+
+    function App() {
+      const [config, setConfig] = useState(null);
+      const [reportsError, setReportsError] = useState(null); // error loading reports list
+
+      const [previewFormatMode, setPreviewFormatMode] = useState('detailed'); // same values as FORMAT_OPTIONS
+      const [previewResult, setPreviewResult] = useState(null); // { detailed, short, text, error }
+      const [previewLoading, setPreviewLoading] = useState(false);
+      const [quickPreviewingFile, setQuickPreviewingFile] = useState(null); // filename currently being quick-previewed
+      const [quickPreviewResult, setQuickPreviewResult] = useState(null);   // { filename, detailed, short, error }
+      const [chartsFile, setChartsFile] = useState(null); // filename currently showing charts
+      const [chartsLoading, setChartsLoading] = useState(false);
+      const [chartImages, setChartImages] = useState([]); // array of {name, url}
+      const [savedReports, setSavedReports] = useState([]);
+      const [currentFilename, setCurrentFilename] = useState(null);
+      const [saveToast, setSaveToast] = useState(null); // null | message string
+      const [strategyState, setStrategyState] = useState(null);       // null|{loading}|{data}|{error}
+      const [strategyApproved, setStrategyApproved] = useState(false); // true = user has reviewed summary and wants to see targets
+      const [strategyEdits, setStrategyEdits] = useState({});         // { [acctName]: { targets: {[ticker]:number}, cash: number|null } }
+      const [strategyLocks, setStrategyLocks] = useState({});         // { [acctName]: { [ticker]: true } } — locked = excluded from redistribution
+      const [strategyIncluded, setStrategyIncluded] = useState({});  // { [acctName]: { [ticker]: true } } — suggestion toggled ON (participates in weight plan)
+      const [strategyPanelOpen, setStrategyPanelOpen] = useState(false);
+      const [rationalePopup, setRationalePopup] = useState(null); // { ticker, rationale } | null
+      const [rebalanceState, setRebalanceState] = useState({});       // { [accIdx]: null|{loading}|{data}|{error} }
+      const [rebalanceSort, setRebalanceSort] = useState({});         // { [accIdx]: { col: string, dir: 'asc'|'desc' } }
+      const [rebalancePending, setRebalancePending] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('rebalancePending') || '{}'); } catch { return {}; }
+      });   // { [`${accIdx}-${ticker}`]: true } — order placed, awaiting settlement; persisted to localStorage
+      const [strategySort, setStrategySort] = useState({});           // { [acctName]: { col: 'ticker'|'target', dir: 'asc'|'desc' } }
+      const [isDirty, setIsDirty] = useState(false);
+      const [pendingAdd, setPendingAdd] = React.useState({});
+      const [rebalanceExpanded, setRebalanceExpanded] = React.useState({});
+      const [editorTab, setEditorTab] = useState('portfolio');        // 'portfolio' | 'schedule' | 'strategy' | 'preview'
+      const debounceRef = React.useRef(null);
+
+      useEffect(() => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+
+        fetch('/api/reports', { signal: controller.signal })
+          .then(r => {
+            if (!r.ok) {
+              if (r.status === 401) {
+                console.warn('[App] Session expired, redirecting to login');
+                window.location.href = '/login.html';
+                return;
+              }
+              throw new Error(`Server error: ${r.status}`);
+            }
+            return r.json();
+          })
+          .then(data => {
+            if (Array.isArray(data)) setSavedReports(data.map(d => d.filename || d));
+          })
+          .catch(err => {
+            let msg = 'Failed to load reports';
+            if (err.name === 'AbortError') {
+              console.warn('[App] Reports fetch timed out after 5s');
+              msg = 'Reports server is not responding (timeout after 5s). Try refreshing.';
+            } else {
+              console.warn('[App] Failed to load reports:', err.message);
+              msg = `Failed to load reports: ${err.message}`;
+            }
+            setReportsError(msg);
+          });
+
+        return () => clearTimeout(timeout);
+      }, []);
+
+      // Auto-recalculate rebalance whenever accounts change (debounced)
+      useEffect(() => {
+        if (!config?.accounts) return;
+        const hasTargets = config.accounts.some(a => a.stocks && a.stocks.some(s => s.targetWeight != null));
+        if (!hasTargets) return;
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+          config.accounts.forEach((_, accIdx) => analyzeRebalance(accIdx));
+        }, 2000);
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+      }, [config?.accounts]);
+
+      // Persist pending trade checkboxes to localStorage
+      useEffect(() => {
+        localStorage.setItem('rebalancePending', JSON.stringify(rebalancePending));
+      }, [rebalancePending]);
+
+      // Warn before leaving with unsaved changes
+      useEffect(() => {
+        const handler = (e) => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+      }, [isDirty]);
+
+      // Reset zoom on orientation change
+      useEffect(() => {
+        const handleOrientationChange = () => {
+          document.body.style.zoom = '100%';
+        };
+        window.addEventListener('orientationchange', handleOrientationChange);
+        return () => window.removeEventListener('orientationchange', handleOrientationChange);
+      }, []);
+
+      const SCHEDULE_HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+      const HOUR_LABELS = { 7:'7:00 AM', 8:'8:00 AM', 9:'9:00 AM', 10:'10:00 AM', 11:'11:00 AM', 12:'12:00 PM', 13:'1:00 PM', 14:'2:00 PM', 15:'3:00 PM', 16:'4:00 PM' };
+
+      const updateConfig = (path, value) => {
+        setConfig(prev => {
+          const newConfig = JSON.parse(JSON.stringify(prev));
+          const keys = path.split('.');
+          let current = newConfig;
+          for (let i = 0; i < keys.length - 1; i++) {
+            current = current[keys[i]];
+          }
+          current[keys[keys.length - 1]] = value;
+          return newConfig;
+        });
+        setIsDirty(true);
+      };
+
+      // Parse existing schedules into grid state
+      const parseSchedulesToGrid = (schedules) => {
+        let weekdaysOnly = true;
+        const hours = {};
+        for (const s of schedules) {
+          let match = s.when.match(/^(weekdays|daily)-at-(\d+)$/);
+          if (match) {
+            if (match[1] === 'daily') weekdaysOnly = false;
+            hours[parseInt(match[2])] = { format: s.format || 'detailed' };
+            continue;
+          }
+          match = s.when.match(/^(weekdays|daily)-at-(\d+)(am|pm)$/);
+          if (match) {
+            if (match[1] === 'daily') weekdaysOnly = false;
+            let h = parseInt(match[2]);
+            if (match[3] === 'pm' && h !== 12) h += 12;
+            if (match[3] === 'am' && h === 12) h = 0;
+            hours[h] = { format: s.format || 'detailed' };
+          }
+        }
+        return { weekdaysOnly, hours };
+      };
+
+      const gridToSchedules = (weekdaysOnly, hours) => {
+        const prefix = weekdaysOnly ? 'weekdays' : 'daily';
+        return Object.entries(hours)
+          .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+          .map(([hour, { format }]) => ({ when: `${prefix}-at-${hour}`, format }));
+      };
+
+      const toggleScheduleHour = (hour) => {
+        setConfig(prev => {
+          const { weekdaysOnly, hours } = parseSchedulesToGrid(prev.schedules);
+          if (hours[hour]) { delete hours[hour]; } else { hours[hour] = { format: 'detailed' }; }
+          return { ...prev, schedules: gridToSchedules(weekdaysOnly, hours) };
+        });
+      };
+
+      const setScheduleHourFormat = (hour, format) => {
+        setConfig(prev => {
+          const { weekdaysOnly, hours } = parseSchedulesToGrid(prev.schedules);
+          hours[hour] = { format };
+          return { ...prev, schedules: gridToSchedules(weekdaysOnly, hours) };
+        });
+      };
+
+      const setScheduleWeekdays = (weekdaysOnly) => {
+        setConfig(prev => {
+          const { hours } = parseSchedulesToGrid(prev.schedules);
+          return { ...prev, schedules: gridToSchedules(weekdaysOnly, hours) };
+        });
+      };
+
+      const addAccount = () => {
+        setConfig(prev => ({ ...prev, accounts: [...prev.accounts, { name: "New Account", stocks: [], cash: 0, currency: "CAD" }] }));
+      };
+      const removeAccount = (index) => {
+        setConfig(prev => ({ ...prev, accounts: prev.accounts.filter((_, i) => i !== index) }));
+      };
+      const moveAccount = (idx, dir) => {
+        const newIdx = idx + dir;
+        if (newIdx < 0 || newIdx >= config.accounts.length) return;
+        setConfig(prev => { const c = JSON.parse(JSON.stringify(prev)); [c.accounts[idx], c.accounts[newIdx]] = [c.accounts[newIdx], c.accounts[idx]]; return c; });
+        setIsDirty(true);
+        const swapKey = (setter) => setter(prev => { const n = {...prev}; [n[idx], n[newIdx]] = [n[newIdx], n[idx]]; return n; });
+        swapKey(setRebalanceState);
+        swapKey(setRebalanceSort);
+        swapKey(setRebalanceExpanded);
+      };
+      const addHolding = (accountIndex) => {
+        setPendingAdd(prev => ({...prev, [accountIndex]: { name: '', shares: '' }}));
+      };
+      const commitPendingAdd = (accIdx) => {
+        const p = pendingAdd[accIdx];
+        if (!p) return;
+        const name = p.name.trim();
+        if (name) {
+          const shares = parseFloat(p.shares) || 0;
+          setConfig(prev => { const c = JSON.parse(JSON.stringify(prev)); c.accounts[accIdx].stocks.push({ ticker: name, name, shares }); return c; });
+          setIsDirty(true);
+        }
+        setPendingAdd(prev => { const n = {...prev}; delete n[accIdx]; return n; });
+      };
+      const removeHolding = (accountIndex, holdingIndex) => {
+        const stock = config.accounts[accountIndex].stocks[holdingIndex];
+        const doRemove = () => {
+          setConfig(prev => {
+            const c = JSON.parse(JSON.stringify(prev));
+            const stocks = c.accounts[accountIndex].stocks;
+            const removed = stocks[holdingIndex];
+            c.accounts[accountIndex].stocks = stocks.filter((_, i) => i !== holdingIndex);
+            // Redistribute removed targetWeight proportionally among remaining managed holdings
+            if (removed.targetWeight) {
+              const remaining = c.accounts[accountIndex].stocks.filter(s => s.targetWeight != null);
+              const remainingSum = remaining.reduce((s, h) => s + h.targetWeight, 0);
+              if (remaining.length > 0 && remainingSum > 0) {
+                let distributed = 0;
+                remaining.forEach((s, i) => {
+                  const share = i < remaining.length - 1
+                    ? Math.round((s.targetWeight / remainingSum) * removed.targetWeight * 10) / 10
+                    : Math.round((removed.targetWeight - distributed) * 10) / 10;
+                  s.targetWeight = Math.round((s.targetWeight + share) * 10) / 10;
+                  distributed += share;
+                });
+              }
+            }
+            return c;
+          });
+          setIsDirty(true);
+        };
+        if ((stock.shares || 0) > 0) {
+          if (window.confirm(`Delete ${stock.name || stock.ticker} (${stock.shares} shares)?`)) doRemove();
+        } else {
+          doRemove();
+        }
+      };
+      const sortHoldings = (accountIndex) => {
+        setConfig(prev => {
+          const newConfig = JSON.parse(JSON.stringify(prev));
+          const stocks = newConfig.accounts[accountIndex].stocks;
+          const key = s => (s.name || s.ticker).toLowerCase();
+          stocks.sort((a, b) => {
+            const aWatch = a.shares === 0;
+            const bWatch = b.shares === 0;
+            if (aWatch !== bWatch) return aWatch ? 1 : -1;
+            return key(a).localeCompare(key(b));
+          });
+          return newConfig;
+        });
+      };
+      const addRecipient = () => {
+        setConfig(prev => ({ ...prev, alertRecipients: [...prev.alertRecipients, ""] }));
+      };
+      const removeRecipient = (index) => {
+        setConfig(prev => ({ ...prev, alertRecipients: prev.alertRecipients.filter((_, i) => i !== index) }));
+      };
+
+      const newConfig = () => {
+        setConfig({
+          reportName: "New_report",
+          schedules: [],
+          alertRecipients: [],
+          accounts: []
+        });
+        setStrategyState(null);
+        setRebalanceState({});
+        setIsDirty(false);
+      };
+
+      const loadFromServer = async (filename) => {
+        try {
+          const resp = await fetch(`/api/reports/${filename}`);
+          const data = await resp.json();
+          if (data.accounts) data.accounts.forEach(a => { if (a.stocks) a.stocks = a.stocks.filter(s => s.ticker || s.name); });
+          setConfig(data);
+          setCurrentFilename(filename);
+          setPreviewResult(null);
+          setStrategyState(data.strategyResult ? { data: data.strategyResult } : null);
+          setRebalanceState({});
+          setIsDirty(false);
+        } catch (err) {
+          alert('Failed to load report');
+        }
+      };
+
+      const loadJSON = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            try {
+              const parsed = JSON.parse(evt.target.result);
+              setConfig(parsed);
+              setCurrentFilename(null);
+              setStrategyState(parsed.strategyResult ? { data: parsed.strategyResult } : null);
+              setRebalanceState({});
+              setIsDirty(false);
+            }
+            catch (err) { alert('Invalid JSON file'); }
+          };
+          reader.readAsText(file);
+        };
+        input.click();
+      };
+
+      const saveJSON = async () => {
+        // Commit any pending adds into the config before saving
+        let savedConfig = config;
+        const pendingEntries = Object.entries(pendingAdd).filter(([, p]) => p?.name?.trim());
+        if (pendingEntries.length > 0) {
+          const c = JSON.parse(JSON.stringify(config));
+          pendingEntries.forEach(([accIdx, p]) => {
+            const name = p.name.trim();
+            const shares = parseFloat(p.shares) || 0;
+            c.accounts[parseInt(accIdx)].stocks.push({ ticker: name, name, shares });
+          });
+          setConfig(c);
+          setPendingAdd({});
+          savedConfig = c;
+        }
+
+        // Always derive filename from reportName to keep them in sync
+        const newFilename = savedConfig.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.json';
+        const isRename = !!currentFilename && currentFilename !== newFilename;
+        const url = isRename
+          ? `/api/reports/${newFilename}?oldFilename=${encodeURIComponent(currentFilename)}`
+          : `/api/reports/${newFilename}`;
+        try {
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(savedConfig)
+          });
+          if (resp.ok) {
+            setCurrentFilename(newFilename);
+            if (isRename) {
+              setSavedReports(prev => prev.map(f => f === currentFilename ? newFilename : f));
+            } else {
+              setSavedReports(prev => prev.includes(newFilename) ? prev : [...prev, newFilename]);
+            }
+            setIsDirty(false);
+            setSaveToast(isRename ? `Saved as ${newFilename}` : 'Saved');
+            setTimeout(() => setSaveToast(null), 2500);
+            // Refresh holdings data to include any newly added stocks
+            savedConfig.accounts.forEach((_, i) => analyzeRebalance(i, savedConfig));
+          }
+        } catch (err) {
+          // Server not available — fall back to download
+          const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+          const dlUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = dlUrl;
+          a.download = newFilename;
+          a.click();
+          URL.revokeObjectURL(dlUrl);
+        }
+      };
+
+
+      const getFormatOptions = () => ({
+        showChangeIcons: true, showValue: true, showChange: true, showWeight: true, showPrice: false, showAllInCAD: true, showWarnings: true, showWatching: true, showTickerSuffix: false, sortBy: 'value',
+        ...(config.formatOptions || {})
+      });
+
+      const toggleFormatOption = (key) => {
+        const current = getFormatOptions();
+        updateConfig('formatOptions', { ...current, [key]: !current[key] });
+      };
+
+      const [claudeCopied, setClaudeCopied] = useState(false);
+      const [claudeModalText, setClaudeModalText] = useState(null);
+      const [claudeLoading, setClaudeLoading] = useState(false);
+
+      const buildClaudeText = (reportData) => {
+        const lines = [];
+        lines.push('Please analyze my investment portfolio. For each holding, identify the asset class (Equity, ETF, Index Fund, GIC/Fixed Income, REIT, Crypto, Cash, etc.), sector (Technology, Financials, Energy, Healthcare, Consumer, Industrials, Utilities, Real Estate, etc.), and geography (Canadian, US, International).');
+        lines.push('');
+        lines.push('Then provide:');
+        lines.push('1. A summary showing distribution by asset class, sector, and geography (with approximate percentages where possible)');
+        lines.push('2. Risk and volatility assessment');
+        lines.push('3. Simple, actionable recommendations to reduce volatility and improve diversification');
+        lines.push('');
+        lines.push(`Portfolio: ${config.reportName}`);
+        lines.push('');
+
+        // Build a lookup from ticker -> HoldingData (already has convFactor applied, values in account currency)
+        const holdingMap = {};
+        const accountDataMap = {};
+        if (reportData && reportData.accounts) {
+          reportData.accounts.forEach((acc, i) => {
+            accountDataMap[i] = acc;
+            for (const h of (acc.holdings || [])) {
+              holdingMap[h.ticker] = h;
+            }
+          });
+        }
+
+        config.accounts.forEach((account, accIdx) => {
+          const sym = (account.currency === 'USD') ? '$' : 'C$';
+          const accData = accountDataMap[accIdx];
+          const totalStr = accData ? `total ${sym}${accData.total.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '';
+          lines.push(`Account: ${account.name} (${account.currency || 'CAD'}${totalStr ? ', ' + totalStr : ''})`);
+          const holdings = account.stocks.filter(s => s.shares > 0);
+          const watchlist = account.stocks.filter(s => s.shares === 0);
+          for (const s of holdings) {
+            const label = s.name || s.ticker;
+            const hd = holdingMap[s.ticker];
+            if (hd && hd.value != null && hd.price != null) {
+              // Use hd.value (already converted to account currency via convFactor in calculator)
+              const price = hd.price.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              const value = hd.value.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              const wt = hd.weight != null ? ` (${hd.weight.toFixed(1)}%)` : '';
+              lines.push(`  - ${label}: ${s.shares} shares @ ${sym}${price} = ${sym}${value}${wt}`);
+            } else {
+              lines.push(`  - ${label}: ${s.shares} shares`);
+            }
+          }
+          if (account.cash && account.cash > 0) {
+            const cashWt = accData ? ` (${accData.cashWeight.toFixed(1)}%)` : '';
+            lines.push(`  - Cash: ${sym}${account.cash.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${cashWt}`);
+          }
+          if (watchlist.length > 0) {
+            lines.push(`  Watchlist (no shares): ${watchlist.map(s => s.name || s.ticker).join(', ')}`);
+          }
+          lines.push('');
+        });
+        return lines.join('\n');
+      };
+
+      const copyForClaude = async () => {
+        setClaudeLoading(true);
+        let reportData = null;
+        try {
+          const filename = currentFilename || config.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.json';
+          const resp = await fetch(`/api/reports/${filename}/holdings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ config })
+          });
+          if (resp.ok) reportData = await resp.json();
+        } catch (_) { /* fall through with no price data */ }
+        setClaudeLoading(false);
+
+        const text = buildClaudeText(reportData);
+        const doFallback = () => setClaudeModalText(text);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            setClaudeCopied(true);
+            setTimeout(() => setClaudeCopied(false), 2500);
+          }).catch(doFallback);
+        } else {
+          doFallback();
+        }
+      };
+
+      const [smsLoading, setSmsLoading] = useState(false);
+      const [smsResult, setSmsResult] = useState(null); // { ok, error }
+
+      const runSMS = async () => {
+        if (!confirm(`Send real SMS to ${(config.alertRecipients || []).join(', ')}?`)) return;
+        setSmsLoading(true);
+        setSmsResult(null);
+        const format = previewFormatMode;
+        const filename = currentFilename || config.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.json';
+        try {
+          await fetch(`/api/reports/${filename}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+          });
+          const resp = await fetch(`/api/reports/${filename}/run`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ format })
+          });
+          const data = await resp.json();
+          if (data.error) throw new Error(data.error);
+          setSmsResult({ ok: true });
+        } catch (err) {
+          setSmsResult({ error: err.message });
+        } finally {
+          setSmsLoading(false);
+        }
+      };
+
+      const runPreview = async () => {
+        setPreviewLoading(true);
+        setPreviewResult(null);
+        const filename = currentFilename || config.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.json';
+        try {
+          // Pass config directly in the body — server writes a temp file so the
+          // real report file is never touched and cron jobs are never disturbed.
+          if (previewFormatMode === 'charts') {
+            const resp = await fetch(`/api/reports/${filename}/preview`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ format: 'charts', config })
+            });
+            const data = await resp.json();
+            if (data.error) throw new Error(data.error);
+            setPreviewResult({ charts: data.charts || [] });
+          } else if (previewFormatMode === 'rebalance') {
+            const resp = await fetch(`/api/reports/${filename}/preview`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ format: 'rebalance', config })
+            });
+            const data = await resp.json();
+            if (data.error) throw new Error(data.error);
+            setPreviewResult({ rebalance: data.message });
+          } else {
+            const [detResp, shortResp] = await Promise.all([
+              fetch(`/api/reports/${filename}/preview`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ format: 'detailed', config })
+              }),
+              fetch(`/api/reports/${filename}/preview`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ format: 'short', config })
+              })
+            ]);
+            const [detData, shortData] = await Promise.all([detResp.json(), shortResp.json()]);
+            if (detData.error) throw new Error(detData.error);
+            if (shortData.error) throw new Error(shortData.error);
+            setPreviewResult({ detailed: detData.message, short: shortData.message });
+          }
+        } catch (err) {
+          setPreviewResult({ error: err.message });
+        } finally {
+          setPreviewLoading(false);
+        }
+      };
+
+      const quickPreviewReport = async (filename) => {
+        setQuickPreviewingFile(filename);
+        setQuickPreviewResult(null);
+        try {
+          const resp = await fetch(`/api/reports/${filename}`);
+          const reportConfig = await resp.json();
+          if (!reportConfig) throw new Error('Failed to load report');
+
+          const [detResp, shortResp] = await Promise.all([
+            fetch(`/api/reports/${filename}/preview`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ format: 'detailed', config: reportConfig })
+            }),
+            fetch(`/api/reports/${filename}/preview`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ format: 'short', config: reportConfig })
+            })
+          ]);
+          const [detData, shortData] = await Promise.all([detResp.json(), shortResp.json()]);
+          if (detData.error) throw new Error(detData.error);
+          if (shortData.error) throw new Error(shortData.error);
+          setQuickPreviewResult({ filename, detailed: detData.message, short: shortData.message });
+        } catch (err) {
+          setQuickPreviewResult({ filename, error: err.message });
+        } finally {
+          setQuickPreviewingFile(null);
+        }
+      };
+
+      const loadCharts = async (filename) => {
+        setChartsFile(filename);
+        setChartImages([]);
+        setChartsLoading(true);
+        try {
+          // Request chart generation from the server
+          const resp = await fetch(`/api/charts/${filename}`, { method: 'POST' });
+          const result = await resp.json();
+          if (!resp.ok) throw new Error(result.error || 'Failed to generate charts');
+
+          // Set chart images from the response
+          const charts = result.charts.map(chart => ({
+            name: chart.name,
+            url: chart.url,
+            error: chart.error
+          }));
+          setChartImages(charts);
+        } catch (err) {
+          setChartImages([{ name: 'Error', url: null, error: err.message }]);
+        } finally {
+          setChartsLoading(false);
+        }
+      };
+
+      // ── AI STRATEGY ─────────────────────────────────────────────────
+      // Compute initial strategyEdits that scale existing weights to 100% when all suggestions are OFF
+      const computeSuggestionInitEdits = (suggestions) => {
+        const edits = {};
+        (suggestions.accounts || []).forEach(acct => {
+          const existing = (acct.targets || []).filter(t => !t.new);
+          const suggested = (acct.targets || []).filter(t => t.new);
+          if (!suggested.length) return;
+          const existingTotal = existing.reduce((s, t) => s + t.targetWeight, 0) + (acct.cashTargetWeight ?? 0);
+          if (existingTotal === 0) return;
+          // Scale each existing weight so they collectively sum to 100%
+          const newTargets = {};
+          let distributed = 0;
+          existing.forEach((t, i) => {
+            if (i === existing.length - 1 && acct.cashTargetWeight == null) {
+              newTargets[t.ticker] = 100 - distributed;
+            } else {
+              newTargets[t.ticker] = Math.round(t.targetWeight / existingTotal * 100);
+              distributed += newTargets[t.ticker];
+            }
+          });
+          let cashVal = null;
+          if (acct.cashTargetWeight != null) {
+            const tDist = existing.reduce((s, t) => s + newTargets[t.ticker], 0);
+            cashVal = 100 - tDist;
+          }
+          edits[acct.accountName] = { targets: newTargets, cash: cashVal };
+        });
+        return edits;
+      };
+
+      const getAIStrategy = async () => {
+        if (strategyState && strategyState.data) {
+          if (!confirm('This will replace the existing strategy. Continue?')) return;
+        }
+        setStrategyState({ loading: true });
+        setStrategyApproved(false);
+        setStrategyPanelOpen(true);
+        try {
+          const resp = await fetch('/api/rebalance-strategy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ config, instructions: config.strategyGoals || '' })
+          });
+          const text = await resp.text();
+          if (!resp.ok) throw new Error(text);
+          const { suggestions } = JSON.parse(text);
+          setStrategyLocks({});
+          setStrategyIncluded({});
+          setStrategyState({ data: suggestions });
+          updateConfig('strategyResult', suggestions);
+          // Redistribute suggestion weights back to existing so total = 100% with all suggestions OFF
+          const initEdits = computeSuggestionInitEdits(suggestions);
+          setStrategyEdits(initEdits);
+        } catch (err) {
+          setStrategyState({ error: err.message });
+        }
+      };
+
+      const applyStrategy = (suggestions) => {
+        if (!confirm('Apply AI strategy? This will overwrite target weights and triggers for all accounts.')) return;
+        const sameLength = suggestions.accounts.length === config.accounts.length;
+        const newAccounts = config.accounts.map((account, accIdx) => {
+          const nameMatch = suggestions.accounts.find(a =>
+            a.accountName === account.name ||
+            a.accountName.toLowerCase().includes(account.name.toLowerCase()) ||
+            account.name.toLowerCase().includes(a.accountName.toLowerCase())
+          );
+          const acctSugg = nameMatch || (sameLength ? suggestions.accounts[accIdx] : null);
+          if (!acctSugg) return account;
+          const normTicker = (t) => t.toUpperCase().replace(/\.(TO|NE|V|TSX)$/i, '');
+          const newStocks = account.stocks.map(stock => {
+            const match = acctSugg.targets.find(t =>
+              t.ticker === stock.ticker || normTicker(t.ticker) === normTicker(stock.ticker)
+            );
+            const updated = { ...stock };
+            if (match) {
+              updated.targetWeight = match.targetWeight;
+              if (match.weightTriggerAbove != null) updated.weightTriggerAbove = match.weightTriggerAbove;
+              else delete updated.weightTriggerAbove;
+              if (match.weightTriggerBelow != null) updated.weightTriggerBelow = match.weightTriggerBelow;
+              else delete updated.weightTriggerBelow;
+              if (match.priceTriggerAbove != null) updated.priceTriggerAbove = match.priceTriggerAbove;
+              else delete updated.priceTriggerAbove;
+              if (match.priceTriggerBelow != null) updated.priceTriggerBelow = match.priceTriggerBelow;
+              else delete updated.priceTriggerBelow;
+            } else {
+              delete updated.targetWeight;
+            }
+            return updated;
+          });
+          // Add included suggestions as new holdings
+          const includedForAcct = strategyIncluded[account.name] || {};
+          (acctSugg.targets || []).filter(t => t.new && includedForAcct[t.ticker] && !newStocks.some(s => s.ticker === t.ticker)).forEach(t => {
+            const h = { ticker: t.ticker, shares: 0, targetWeight: t.targetWeight };
+            if (t.weightTriggerAbove != null) h.weightTriggerAbove = t.weightTriggerAbove;
+            if (t.weightTriggerBelow != null) h.weightTriggerBelow = t.weightTriggerBelow;
+            if (t.priceTriggerAbove != null) h.priceTriggerAbove = t.priceTriggerAbove;
+            if (t.priceTriggerBelow != null) h.priceTriggerBelow = t.priceTriggerBelow;
+            newStocks.push(h);
+          });
+          return { ...account, stocks: newStocks };
+        });
+        updateConfig('accounts', newAccounts);
+        // Auto-run rebalance with the freshly applied config (bypass stale closure)
+        const updatedConfig = { ...config, accounts: newAccounts };
+        setRebalanceState({});
+        newAccounts.forEach((_, accIdx) => analyzeRebalance(accIdx, updatedConfig));
+      };
+
+      const addSuggestedHolding = (accountName, target, existingPool, existingOrigWeights) => {
+        // 1. Add to account config
+        setConfig(prev => {
+          const c = JSON.parse(JSON.stringify(prev));
+          const accIdx = c.accounts.findIndex(a => a.name === accountName);
+          if (accIdx === -1) return prev;
+          const h = { ticker: target.ticker, shares: 0, targetWeight: target.targetWeight };
+          if (target.weightTriggerAbove != null) h.weightTriggerAbove = target.weightTriggerAbove;
+          if (target.weightTriggerBelow != null) h.weightTriggerBelow = target.weightTriggerBelow;
+          if (target.priceTriggerAbove != null) h.priceTriggerAbove = target.priceTriggerAbove;
+          if (target.priceTriggerBelow != null) h.priceTriggerBelow = target.priceTriggerBelow;
+          c.accounts[accIdx].stocks.push(h);
+          return c;
+        });
+        // 2. Move from suggested → existing in strategy state (remove new: true)
+        setStrategyState(prev => {
+          if (!prev?.data) return prev;
+          const newData = { ...prev.data, accounts: prev.data.accounts.map(acct => {
+            if (acct.accountName !== accountName) return acct;
+            return { ...acct, targets: acct.targets.map(t =>
+              t.ticker === target.ticker ? { ...t, new: false } : t
+            )};
+          })};
+          return { ...prev, data: newData };
+        });
+        // 3. Redistribute existing weights to absorb the new allocation
+        const newPool = [...existingPool, target.ticker];
+        const newOrigWeights = { ...existingOrigWeights, [target.ticker]: 0 };
+        redistributeWeight(accountName, target.ticker, target.targetWeight, newPool, newOrigWeights);
+      };
+
+      // ── STRATEGY TWEAK HELPERS ───────────────────────────────────────
+      const getEffectiveWeight = (acctName, ticker, originalWeight) => {
+        const e = strategyEdits[acctName];
+        if (!e) return originalWeight;
+        if (ticker === '__cash__') return e.cash != null ? e.cash : originalWeight;
+        return e.targets?.[ticker] != null ? e.targets[ticker] : originalWeight;
+      };
+
+      const setEditedWeight = (acctName, ticker, value) => {
+        setStrategyEdits(prev => {
+          const acct = prev[acctName] || { targets: {}, cash: null };
+          if (ticker === '__cash__') return { ...prev, [acctName]: { ...acct, cash: value } };
+          return { ...prev, [acctName]: { ...acct, targets: { ...acct.targets, [ticker]: value } } };
+        });
+      };
+
+      const redistributeWeight = (acctName, changedTicker, newWeight, allTickers, originalWeights) => {
+        const e = strategyEdits[acctName] || {};
+        const cur = {};
+        allTickers.forEach(tk => {
+          if (tk === '__cash__') cur[tk] = e.cash != null ? e.cash : (originalWeights[tk] ?? 0);
+          else cur[tk] = e.targets?.[tk] != null ? e.targets[tk] : (originalWeights[tk] ?? 0);
+        });
+        const delta = newWeight - (cur[changedTicker] ?? 0);
+        if (delta === 0) return;
+        const locks = strategyLocks[acctName] || {};
+        const absorbers = allTickers.filter(tk => tk !== changedTicker && !locks[tk]);
+        const absorberSum = absorbers.reduce((s, tk) => s + (cur[tk] ?? 0), 0);
+        setStrategyEdits(prev => {
+          const acct = prev[acctName] || { targets: {}, cash: null };
+          const newTargets = { ...(acct.targets || {}) };
+          let newCash = acct.cash != null ? acct.cash : null;
+          if (changedTicker === '__cash__') newCash = Math.max(0, Math.round(newWeight * 10) / 10);
+          else newTargets[changedTicker] = Math.max(0, Math.round(newWeight * 10) / 10);
+          const newVals = {};
+          if (absorberSum > 0) {
+            absorbers.forEach(tk => {
+              newVals[tk] = Math.max(0, Math.round((cur[tk] - delta * (cur[tk] / absorberSum)) * 10) / 10);
+              if (tk === '__cash__') newCash = newVals[tk];
+              else newTargets[tk] = newVals[tk];
+            });
+            // Reconcile rounding residual so total stays exactly 100%
+            const changedVal = changedTicker === '__cash__' ? newCash : (newTargets[changedTicker] ?? 0);
+            const lockedSum = allTickers.filter(tk => locks[tk] && tk !== changedTicker).reduce((s, tk) => s + (cur[tk] ?? 0), 0);
+            const absorberTotal = absorbers.reduce((s, tk) => s + (newVals[tk] ?? 0), 0);
+            const residual = Math.round((100 - changedVal - lockedSum - absorberTotal) * 10) / 10;
+            if (residual !== 0) {
+              const largest = absorbers.reduce((best, tk) => (newVals[tk] ?? 0) > (newVals[best] ?? 0) ? tk : best, absorbers[0]);
+              const corrected = Math.max(0, Math.round((newVals[largest] + residual) * 10) / 10);
+              if (largest === '__cash__') newCash = corrected;
+              else newTargets[largest] = corrected;
+            }
+          }
+          return { ...prev, [acctName]: { targets: newTargets, cash: newCash } };
+        });
+      };
+
+      const adjustTargetWeight = (accIdx, stockIdx, delta) => {
+        setConfig(prev => {
+          const c = JSON.parse(JSON.stringify(prev));
+          const stocks = c.accounts[accIdx].stocks;
+          const changed = stocks[stockIdx];
+          if (changed.targetWeight == null) return prev;
+          const newWeight = Math.max(0, Math.round((changed.targetWeight + delta) * 10) / 10);
+          const actualDelta = newWeight - changed.targetWeight;
+          if (actualDelta === 0) return prev;
+          changed.targetWeight = newWeight;
+          const absorbers = stocks.filter((s, i) => i !== stockIdx && s.targetWeight != null);
+          const absorberSum = absorbers.reduce((sum, s) => sum + s.targetWeight, 0);
+          if (absorberSum > 0) {
+            const newVals = absorbers.map(s => Math.max(0, Math.round((s.targetWeight - actualDelta * (s.targetWeight / absorberSum)) * 10) / 10));
+            newVals.forEach((v, i) => { absorbers[i].targetWeight = v; });
+            const residual = Math.round((Math.round((absorberSum - actualDelta) * 10) / 10 - newVals.reduce((s, v) => s + v, 0)) * 10) / 10;
+            if (residual !== 0) {
+              const li = newVals.indexOf(Math.max(...newVals));
+              absorbers[li].targetWeight = Math.max(0, Math.round((newVals[li] + residual) * 10) / 10);
+            }
+          }
+          return c;
+        });
+      };
+
+      const analyzeRebalance = async (accIdx, configOverride = null) => {
+        setRebalanceState(prev => ({ ...prev, [accIdx]: { ...prev[accIdx], loading: true } }));
+        const cfg = configOverride || config;
+        const filename = currentFilename || cfg.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.json';
+        try {
+          const resp = await fetch(`/api/reports/${filename}/holdings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ config: cfg })
+          });
+          if (!resp.ok) throw new Error('Server error');
+          const reportData = await resp.json();
+          const accountData = reportData.accounts[accIdx];
+          const rebalance = accountData?.rebalance || null;
+          setRebalanceState(prev => ({ ...prev, [accIdx]: { data: rebalance, holdings: accountData?.holdings, accountTotal: accountData?.total } }));
+        } catch (err) {
+          setRebalanceState(prev => ({ ...prev, [accIdx]: { error: err.message } }));
+        }
+      };
+
+      // ── TOP BAR (always visible) ─────────────────────────────────────
+      const topBar = (
+        <div className="top-bar">
+          <div style={{display: 'flex', alignItems: 'baseline', gap: '0.6rem'}}>
+            <h1>Portfolio Config Editor</h1>
+            {config && <span style={{fontSize: '0.75rem', color: '#888'}}>{config.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.json</span>}
+          </div>
+          <div className="top-bar-actions">
+            {savedReports.length > 0 && (
+              <select
+                value={currentFilename || ''}
+                onChange={(e) => e.target.value && loadFromServer(e.target.value)}
+                style={{fontSize: '0.75rem'}}
+              >
+                <option value="">Switch report…</option>
+                {savedReports.map(f => <option key={f} value={f}>{f.replace('.json', '')}</option>)}
+              </select>
+            )}
+            <button className="btn btn-secondary" onClick={newConfig}>New</button>
+            <button className="btn btn-secondary" onClick={loadJSON}>Open</button>
+            {config && <button className="btn btn-secondary" title="Refresh prices &amp; rebalance data" onClick={() => { setRebalanceState({}); config.accounts.forEach((_, i) => analyzeRebalance(i)); }}>↻ Refresh</button>}
+            {config && <button className="btn btn-primary" onClick={saveJSON} style={isDirty ? {background: '#d97706', borderColor: '#d97706'} : {}}>{isDirty ? 'Save *' : 'Save'}</button>}
+            {saveToast && <span style={{fontSize: '0.75rem', color: '#16a34a', fontWeight: 500}}>{saveToast}</span>}
+          </div>
+        </div>
+      );
+
+      // ── EMPTY STATE ──────────────────────────────────────────────────
+      if (!config) {
+        return (
+          <div className="app">
+            {topBar}
+            <div className="empty-state">
+              {reportsError ? (
+                <div>
+                  <p style={{color: '#dc2626', marginBottom: '0.75rem', fontWeight: 500}}>⚠ {reportsError}</p>
+                  <p style={{marginBottom: '0.75rem', fontSize: '0.85rem', color: '#666'}}>You can still create a new report or open a JSON file:</p>
+                  <div className="row" style={{marginTop: '0.5rem', justifyContent: 'center'}}>
+                    <button className="btn btn-primary" onClick={newConfig}>New Report</button>
+                    <button className="btn btn-secondary" onClick={loadJSON}>Open JSON</button>
+                    <button className="btn btn-secondary" onClick={() => { setReportsError(null); window.location.reload(); }}>Retry</button>
+                  </div>
+                </div>
+              ) : savedReports.length > 0 ? (
+                <div>
+                  <p style={{marginBottom: '0.75rem'}}>Select a report to edit:</p>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'center'}}>
+                    {savedReports.map(f => (
+                      <div key={f} style={{display: 'flex', gap: '0.3rem', alignItems: 'center'}}>
+                        <button className="btn btn-secondary" style={{width: '200px'}} onClick={() => loadFromServer(f)}>
+                          {f.replace('.json', '')}
+                        </button>
+                        <button className="btn btn-primary btn-preview-tall" onClick={() => quickPreviewReport(f)} disabled={quickPreviewingFile === f} title="Preview this report">
+                          {quickPreviewingFile === f ? 'Fetching…' : 'Preview'}
+                        </button>
+                        <button className="btn btn-primary btn-preview-tall" onClick={() => loadCharts(f)} disabled={chartsLoading && chartsFile === f} title="View performance charts">
+                          {chartsLoading && chartsFile === f ? 'Loading…' : 'Charts'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {quickPreviewResult && (
+                    <div style={{marginTop: '1.25rem', textAlign: 'left', maxWidth: '420px', margin: '1.25rem auto 0'}}>
+                      <div style={{fontSize: '0.7rem', color: '#888', marginBottom: '0.4rem', textAlign: 'center'}}>
+                        {quickPreviewResult.filename.replace('.json', '')}
+                        {' '}<button style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: '#aaa', padding: 0}} onClick={() => setQuickPreviewResult(null)}>✕</button>
+                      </div>
+                      {quickPreviewResult.error ? (
+                        <div style={{color: '#dc2626', fontSize: '0.75rem'}}>Error: {quickPreviewResult.error}</div>
+                      ) : (
+                        <div className="preview-grid">
+                          <div>
+                            <div className="preview-label">Detailed</div>
+                            <div className="preview-bubble">{quickPreviewResult.detailed}</div>
+                          </div>
+                          <div>
+                            <div className="preview-label">Short</div>
+                            <div className="preview-bubble">{quickPreviewResult.short}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {chartImages.length > 0 && (
+                    <div style={{marginTop: '1.25rem', textAlign: 'center', maxWidth: '100%'}}>
+                      <div style={{fontSize: '0.7rem', color: '#888', marginBottom: '0.8rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem'}}>
+                        {chartsFile.replace('.json', '')} — Charts
+                        {' '}<button style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: '#aaa', padding: 0}} onClick={() => setChartImages([])}>✕</button>
+                      </div>
+                      {chartImages[0].error ? (
+                        <div style={{color: '#dc2626', fontSize: '0.75rem'}}>Error: {chartImages[0].error}</div>
+                      ) : (
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center'}}>
+                          {chartImages.map((chart) => (
+                            <div key={chart.name} style={{textAlign: 'center'}}>
+                              <div style={{fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem', fontWeight: '500'}}>{chart.name}</div>
+                              <img src={chart.url} alt={`${chart.name} Performance`} style={{maxWidth: '100%', maxHeight: '400px', border: '1px solid #ddd', borderRadius: '4px'}} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div style={{marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center'}}>
+                    <button className="btn btn-primary" onClick={newConfig}>New Report</button>
+                    <button className="btn btn-secondary" onClick={loadJSON}>Open JSON file</button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p>No reports found. Create a new report or open a JSON file.</p>
+                  <div className="row" style={{marginTop: '0.75rem'}}>
+                    <button className="btn btn-primary" onClick={newConfig}>New Report</button>
+                    <button className="btn btn-secondary" onClick={loadJSON}>Open JSON</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // ── FORM ─────────────────────────────────────────────────────────
+      const { weekdaysOnly, hours } = parseSchedulesToGrid(config.schedules);
+
+      return (
+        <div className="app">
+          <div className="sticky-header">
+            {topBar}
+            <div className="editor-tabs">
+              <button className={`editor-tab-btn${editorTab === 'portfolio' ? ' active' : ''}`} onClick={() => setEditorTab('portfolio')}>Holdings</button>
+              <button className={`editor-tab-btn${editorTab === 'strategy' ? ' active' : ''}`} onClick={() => setEditorTab('strategy')}>Strategy</button>
+              <button className={`editor-tab-btn${editorTab === 'schedule' ? ' active' : ''}`} onClick={() => setEditorTab('schedule')}>Schedule</button>
+              <button className={`editor-tab-btn${editorTab === 'preview' ? ' active' : ''}`} onClick={() => setEditorTab('preview')}>Preview</button>
+            </div>
+          </div>
+
+          <div style={{paddingTop: '0.75rem'}}>
+
+          {editorTab === 'schedule' && <>
+
+          {/* Report Details */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Report Details</h2>
+            </div>
+            <div className="row">
+              <div className="field">
+                <label>Report Name</label>
+                <input type="text" value={config.reportName} onChange={(e) => updateConfig('reportName', e.target.value)} placeholder="Daves_report" style={{width: '200px'}} />
+              </div>
+            </div>
+          </div>
+
+          {/* Schedules */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Schedules</h2>
+            </div>
+            <div className="schedule-days-toggle">
+              <label>
+                <input type="checkbox" checked={weekdaysOnly} onChange={(e) => setScheduleWeekdays(e.target.checked)} />
+                {' '}Weekdays only
+              </label>
+              <span style={{fontSize: '0.65rem', color: '#666'}}>{weekdaysOnly ? 'Mon–Fri' : 'Every day'}</span>
+            </div>
+            <div className="schedule-grid">
+              {SCHEDULE_HOURS.map(hour => {
+                const checked = !!hours[hour];
+                const hourFormat = (hours[hour] || {}).format || 'detailed';
+                return (
+                  <div key={hour} className={`schedule-grid-row${checked ? ' checked' : ''}`}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleScheduleHour(hour)} />
+                    <label className="hour-label" onClick={() => toggleScheduleHour(hour)}>{HOUR_LABELS[hour]}</label>
+                    {checked && (
+                      <select value={hourFormat} onChange={(e) => setScheduleHourFormat(hour, e.target.value)}>
+                        {FORMAT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Recipients */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Post to ntfy topic:</h2>
+              <button className="btn btn-secondary btn-sm" onClick={addRecipient}>+ Add</button>
+            </div>
+            {config.alertRecipients.map((recipient, idx) => (
+              <div key={idx} className="recipient-row">
+                <input type="text" value={recipient} onChange={(e) => updateConfig(`alertRecipients.${idx}`, e.target.value)} placeholder="portfolio-dave-a7x29k" />
+                <button className="btn btn-danger btn-sm" onClick={() => removeRecipient(idx)}>×</button>
+              </div>
+            ))}
+          </div>
+
+          </>}
+
+          {editorTab === 'portfolio' && <>
+
+          {/* Accounts */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Accounts</h2>
+              <div style={{display:'flex',alignItems:'center',gap:'0.75rem'}}>
+                <button className="btn btn-secondary btn-sm" onClick={addAccount}>+ Add Account</button>
+              </div>
+            </div>
+            {config.accounts.map((account, accIdx) => (
+              <div key={accIdx} className="account-card">
+                <div className="account-header">
+                  <div style={{display:'flex',alignItems:'center',gap:'0.25rem'}}>
+                    <input type="text" value={account.name} onChange={(e) => updateConfig(`accounts.${accIdx}.name`, e.target.value)} onFocus={(e) => e.target.select()} style={{font: 'inherit', fontWeight: 600, fontSize: '0.85rem', border: 'none', background: 'transparent', padding: 0, outline: 'none', minWidth: '60px', width: `${Math.max(60, account.name.length * 8)}px`, maxWidth: '200px'}} />
+                    <span style={{fontSize:'0.7rem',color:'#9ca3af',cursor:'text',lineHeight:1}} title="Click to rename" onClick={() => { const el = document.querySelectorAll('.account-header input[type=text]')[accIdx]; el?.focus(); el?.select(); }}>✏️</span>
+                  </div>
+                  {(() => {
+                    const rs = rebalanceState[accIdx];
+                    const sym = account.currency === 'USD' ? '$' : 'C$';
+                    if (rs?.loading && rs?.accountTotal == null) return <span style={{fontSize: '0.7rem', color: '#aaa'}}>…</span>;
+                    if (rs?.accountTotal != null) return <span style={{fontSize: '0.72rem', color: '#555', fontWeight: 400}}>{sym}{Math.round(rs.accountTotal).toLocaleString('en-CA')}</span>;
+                    return null;
+                  })()}
+                  <div style={{display: 'flex', gap: '0.25rem', alignItems: 'center'}}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => moveAccount(accIdx, -1)} disabled={accIdx === 0} title="Move up">↑</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => moveAccount(accIdx, 1)} disabled={accIdx === config.accounts.length - 1} title="Move down">↓</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => removeAccount(accIdx)}>Remove</button>
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="field">
+                    <label>Currency</label>
+                    <select value={account.currency} onChange={(e) => updateConfig(`accounts.${accIdx}.currency`, e.target.value)} style={{width: '65px'}}>
+                      <option value="CAD">CAD</option>
+                      <option value="USD">USD</option>
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Cash</label>
+                    <input type="number" value={account.cash} onChange={(e) => updateConfig(`accounts.${accIdx}.cash`, parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} style={{width: '90px'}} />
+                  </div>
+                </div>
+                <div style={{marginTop: '0.35rem'}}>
+                  <div className="row" style={{marginBottom: '0.2rem'}}>
+                    <label style={{flex: 1}}>Holdings</label>
+                    <button className="btn btn-secondary btn-sm" onClick={() => sortHoldings(accIdx)}>A–Z</button>
+                  </div>
+                  <div className="holding-scroll-wrap">
+                    <div className="holding-min-width">
+                  {(account.stocks.length > 0 || pendingAdd[accIdx] !== undefined) && (
+                    <div className="holding-header">
+                      <span className="hh-name">Name</span>
+                      <span className="hh-shares">Shares</span>
+                      <span className="hh-price">Price</span>
+                      <span className="hh-wt">Wt%</span>
+                      <span className="hh-targ">Targ%</span>
+                      <span className="hh-diff">Diff</span>
+                      <span className="hh-action">Action</span>
+                      <span className="hh-btn" style={{minWidth:'46px'}}></span>
+                    </div>
+                  )}
+                  {account.stocks.map((stock, stockIdx) => ({stock, stockIdx})).filter(({stock}) => stock.ticker || stock.name).map(({stock, stockIdx}) => {
+                    const rs = rebalanceState[accIdx];
+                    const hd = rs?.holdings?.[stockIdx];
+                    const sym = account.currency === 'USD' ? '$' : 'C$';
+                    const raction = rs?.data?.actions?.find(a => a.ticker === stock.ticker);
+                    const priceStr = hd?.price != null ? `${sym}${hd.price.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+                    const wtStr = hd?.weight != null ? hd.weight.toFixed(1)+'%' : '—';
+                    const targStr = stock.targetWeight != null ? stock.targetWeight.toFixed(1)+'%' : '—';
+                    const diff = (stock.targetWeight != null && hd?.weight != null) ? stock.targetWeight - hd.weight : null;
+                    const diffStr = diff != null ? (diff >= 0 ? '+' : '') + diff.toFixed(1)+'%' : '—';
+                    const diffColor = diff == null ? '#aaa' : Math.abs(diff) < 0.5 ? '#888' : diff > 0 ? '#16a34a' : '#dc2626';
+                    // Look up rationale from strategy data
+                    const normTk = (t) => t.toUpperCase().replace(/\.(TO|NE|V|TSX)$/i, '');
+                    const stratAcct = strategyState?.data?.accounts?.find((a, ai) =>
+                      a.accountName === account.name ||
+                      a.accountName.toLowerCase().includes(account.name.toLowerCase()) ||
+                      account.name.toLowerCase().includes(a.accountName.toLowerCase()) ||
+                      ai === accIdx
+                    );
+                    const rationale = stratAcct?.targets?.find(t => t.ticker === stock.ticker || normTk(t.ticker) === normTk(stock.ticker))?.rationale;
+                    let actionText = '', actionColor = '#888';
+                    const pendingKey = `${config.reportName}|${account.name}|${stock.ticker}`;
+                    const isPending = !!rebalancePending[pendingKey];
+                    if (raction) {
+                      if (raction.action === 'hold') {
+                        actionText = '✓'; actionColor = '#888';
+                      } else {
+                        const costSym = raction.convFactor ? '$' : sym;
+                        const cost = Math.round(raction.convFactor ? raction.deltaCost / raction.convFactor : raction.deltaCost).toLocaleString('en-CA');
+                        const orderPart = raction.orderType === 'market' ? ' market ⚡'
+                          : raction.limitPrice != null ? ` limit ${costSym}${(raction.convFactor ? raction.limitPrice / raction.convFactor : raction.limitPrice).toFixed(2)}` : '';
+                        actionText = `${raction.action} ${raction.deltaShares} (${costSym}${cost})${orderPart}`;
+                        actionColor = raction.action === 'buy' ? '#16a34a' : '#dc2626';
+                      }
+                    } else if (!rs && stock.targetWeight != null) {
+                      actionText = 'run rebalance'; actionColor = '#9ca3af';
+                    }
+                    return (
+                      <div key={stockIdx} className="holding-row" style={isPending ? {opacity:0.5} : {}}>
+                        <div className="hi-name" style={{display:'flex',flexDirection:'column',justifyContent:'center',gap:'1px'}}>
+                          <input type="text" style={{font:'inherit',border:'1px solid #d1d5db',borderRadius:'3px',padding:'0.15rem 0.3rem',width:'100%',boxSizing:'border-box'}} value={stock.ticker || ''} onChange={(e) => { const v = e.target.value; setConfig(prev => { const c = JSON.parse(JSON.stringify(prev)); c.accounts[accIdx].stocks[stockIdx].ticker = v || ''; c.accounts[accIdx].stocks[stockIdx].name = undefined; return c; }); setPreviewResult(null); }} placeholder="Ticker" />
+                        </div>
+                        <input className="hi-shares" type="text" inputMode="decimal" key={`shares-${accIdx}-${stockIdx}-${stock.shares}`} defaultValue={stock.shares} onBlur={(e) => { const val = parseFloat(e.target.value); updateConfig(`accounts.${accIdx}.stocks.${stockIdx}.shares`, isNaN(val) ? 0 : val); }} />
+                        <span className="hi-stat hi-price" title="Current price in account currency">{priceStr}</span>
+                        <span className="hi-stat hi-wt" title="Current portfolio weight">{wtStr}</span>
+                        <span className="hi-targ">
+                          <button className="hi-adj" onClick={() => adjustTargetWeight(accIdx, stockIdx, -1)} disabled={stock.targetWeight == null}>−</button>
+                          <span style={{flex:1,textAlign:'center',fontSize:'0.7rem',color:'#555'}}>{targStr}</span>
+                          <button className="hi-adj" onClick={() => adjustTargetWeight(accIdx, stockIdx, +1)} disabled={stock.targetWeight == null}>+</button>
+                        </span>
+                        <span className="hi-stat hi-diff" style={{color:diffColor}} title="Target − current weight">{diffStr}</span>
+                        <span className="hi-action" style={{color: isPending ? '#aaa' : actionColor}} title={actionText}>
+                          {raction && raction.action !== 'hold' && (
+                            <input type="checkbox" checked={isPending} onChange={() => setRebalancePending(p => ({...p, [pendingKey]: !p[pendingKey]}))} title="Mark order placed" style={{marginRight:'0.25rem',verticalAlign:'middle'}} />
+                          )}
+                          {actionText}
+                        </span>
+                        {rationale && <button className="hi-info" style={{flexShrink:0}} onClick={() => setRationalePopup({ticker: stock.name || stock.ticker, rationale})} title="Strategy rationale">ⓘ</button>}
+                        <button className="btn btn-danger btn-sm" style={{flexShrink:0}} onClick={() => removeHolding(accIdx, stockIdx)}>×</button>
+                      </div>
+                    );
+                  })}
+                  {pendingAdd[accIdx] !== undefined && (
+                    <div className="holding-row" style={{borderLeftColor: '#10b981'}}>
+                      <input className="hi-name" type="text" autoFocus value={pendingAdd[accIdx].name} onChange={(e) => setPendingAdd(prev => ({...prev, [accIdx]: {...prev[accIdx], name: e.target.value}}))} onKeyDown={(e) => { if (e.key === 'Enter') commitPendingAdd(accIdx); if (e.key === 'Escape') setPendingAdd(prev => { const n = {...prev}; delete n[accIdx]; return n; }); }} placeholder="Ticker" />
+                      <input className="hi-shares" type="text" inputMode="decimal" value={pendingAdd[accIdx].shares} onChange={(e) => setPendingAdd(prev => ({...prev, [accIdx]: {...prev[accIdx], shares: e.target.value}}))} onKeyDown={(e) => { if (e.key === 'Enter') commitPendingAdd(accIdx); if (e.key === 'Escape') setPendingAdd(prev => { const n = {...prev}; delete n[accIdx]; return n; }); }} placeholder="0" />
+                      <button className="btn btn-primary btn-sm" onClick={() => commitPendingAdd(accIdx)}>+</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => setPendingAdd(prev => { const n = {...prev}; delete n[accIdx]; return n; })}>×</button>
+                    </div>
+                  )}
+                    </div>
+                  </div>
+                  <div style={{marginTop: '0.3rem'}}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => addHolding(accIdx)}>+ Add</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          </>}
+
+          {editorTab === 'strategy' && <>
+
+          {/* Strategy */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Strategy</h2>
+            </div>
+            <div style={{marginBottom: '0.4rem'}}>
+              <label style={{display: 'block', marginBottom: '2px'}}>Enter prompt to generate strategy</label>
+              <textarea
+                value={config.strategyGoals || ''}
+                onChange={(e) => updateConfig('strategyGoals', e.target.value)}
+                placeholder="e.g. Diversify internationally, reduce US tech concentration. Hold more cash in TFSA."
+                style={{width: '100%', height: '3.5rem', fontSize: '0.75rem', fontFamily: 'inherit', padding: '0.3rem 0.4rem', border: '1px solid #ccc', borderRadius: '3px', resize: 'vertical', boxSizing: 'border-box'}}
+              />
+              <button className="btn btn-primary" onClick={getAIStrategy} disabled={strategyState && strategyState.loading} style={{marginTop: '0.4rem'}}>
+                {strategyState && strategyState.loading ? 'Fetching…' : 'Generate Strategy'}
+              </button>
+            </div>
+            {strategyState && strategyState.error && (
+              <div style={{color: '#dc2626', fontSize: '0.75rem', marginBottom: '0.4rem'}}>{strategyState.error}</div>
+            )}
+            {strategyState && strategyState.data && (() => {
+              const s = strategyState.data;
+              return (
+                <div>
+                  {(s.strategy || s.notes) && (
+                    <div style={{marginBottom: '0.6rem'}}>
+                      <div style={{fontSize: '0.68rem', fontWeight: 600, color: '#555', marginBottom: '2px'}}>Strategy summary</div>
+                      <div style={{fontSize: '0.75rem', color: '#444', padding: '0.3rem 0.5rem', background: '#f8f9ff', border: '1px solid #e0e7ff', borderRadius: '3px'}}>
+                        {s.strategy}
+                        {s.notes && <div style={{marginTop: '0.3rem'}}>{s.notes}</div>}
+                      </div>
+                    </div>
+                  )}
+                  {!strategyApproved && (
+                    <div style={{marginBottom: '0.5rem'}}>
+                      <button className="btn btn-primary" onClick={() => { setStrategyApproved(true); config.accounts.forEach((_, i) => analyzeRebalance(i)); }}>Generate Rebalancing</button>
+                    </div>
+                  )}
+                  {strategyApproved && <>{s.accounts && s.accounts.map((acctSugg, si) => {
+                    const acctName = acctSugg.accountName;
+                    const acct = config.accounts.find(a => a.name === acctName);
+                    // Treat already-added tickers as existing even if flagged new (handles page reload)
+                    const isAlreadyAdded = (t) => t.new && acct && acct.stocks.some(s => s.ticker === t.ticker);
+                    const existing = (acctSugg.targets || []).filter(t => !t.new || isAlreadyAdded(t));
+                    const suggested = (acctSugg.targets || []).filter(t => t.new && !isAlreadyAdded(t));
+                    const locks = strategyLocks[acctName] || {};
+                    // Existing pool — base set from AI (non-new targets)
+                    const existingOrigWeights = {};
+                    existing.forEach(t => { existingOrigWeights[t.ticker] = t.targetWeight; });
+                    if (acctSugg.cashTargetWeight != null) existingOrigWeights['__cash__'] = acctSugg.cashTargetWeight;
+                    const existingPool = [...existing.map(t => t.ticker), ...(acctSugg.cashTargetWeight != null ? ['__cash__'] : [])];
+                    // Split suggestions into included (ON) and pending (OFF)
+                    const includedSugg = suggested.filter(t => !!(strategyIncluded[acctName]?.[t.ticker]));
+                    const notIncludedSugg = suggested.filter(t => !(strategyIncluded[acctName]?.[t.ticker]));
+                    // Full pool = existing + included suggestions
+                    const fullOrigWeights = { ...existingOrigWeights, ...Object.fromEntries(includedSugg.map(t => [t.ticker, t.targetWeight])) };
+                    const fullPool = [...existingPool, ...includedSugg.map(t => t.ticker)];
+                    // allTickers for redistribution includes included suggestions
+                    const allTickers = fullPool;
+                    const total = Math.round(fullPool.reduce((sum, tk) => sum + getEffectiveWeight(acctName, tk, fullOrigWeights[tk]), 0) * 10) / 10;
+                    // Toggle a suggestion ON/OFF — redistributes weight to/from existing
+                    const toggleInclude = (ticker, origSuggWeight) => {
+                      const wasIncluded = !!(strategyIncluded[acctName]?.[ticker]);
+                      if (wasIncluded) {
+                        // Toggle OFF: give weight back to existing, then remove ticker from edits so it reverts to AI weight in suggested box
+                        setStrategyIncluded(prev => { const n = {...(prev[acctName]||{})}; delete n[ticker]; return {...prev, [acctName]: n}; });
+                        redistributeWeight(acctName, ticker, 0, fullPool, fullOrigWeights);
+                        setStrategyEdits(prev => { const a = prev[acctName] || {}; const nt = {...(a.targets||{})}; delete nt[ticker]; return {...prev, [acctName]: {...a, targets: nt}}; });
+                      } else {
+                        // Toggle ON: take weight from existing (ticker goes from 0 → its AI-suggested weight)
+                        const effNow = getEffectiveWeight(acctName, ticker, origSuggWeight);
+                        setStrategyIncluded(prev => ({ ...prev, [acctName]: { ...(prev[acctName]||{}), [ticker]: true } }));
+                        redistributeWeight(acctName, ticker, effNow, [...fullPool, ticker], {...fullOrigWeights, [ticker]: 0});
+                      }
+                    };
+                    const hasEdits = !!(strategyEdits[acctName] && (Object.keys(strategyEdits[acctName].targets || {}).length > 0 || strategyEdits[acctName].cash != null));
+                    const btnStyle = {background: 'none', border: 'none', cursor: 'pointer', padding: 0};
+                    const stepBtnStyle = (disabled) => ({background: 'none', border: '1px solid #ddd', borderRadius: '2px', cursor: disabled ? 'default' : 'pointer', fontSize: '0.68rem', padding: '0 0.22rem', color: disabled ? '#ccc' : '#555', lineHeight: '1.4', minWidth: '14px'});
+                    return (
+                      <div key={si} style={{marginBottom: '0.75rem'}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem'}}>
+                          <div style={{fontWeight: 600, fontSize: '0.8rem'}}>{acctName}</div>
+                          {hasEdits && (
+                            <button onClick={() => {
+                              setStrategyLocks(prev => { const n = {...prev}; delete n[acctName]; return n; });
+                              setStrategyIncluded(prev => { const n = {...prev}; delete n[acctName]; return n; });
+                              // Recompute initial edits for this account (redistributes suggestion weights back to existing)
+                              const acctData = strategyState?.data?.accounts?.find(a => a.accountName === acctName);
+                              const initEdits = acctData ? computeSuggestionInitEdits({ accounts: [acctData] }) : {};
+                              setStrategyEdits(prev => { const n = {...prev}; delete n[acctName]; return { ...n, ...initEdits }; });
+                            }} className="btn btn-secondary btn-sm" style={{fontSize: '0.68rem', padding: '0.1rem 0.45rem'}}>↩ Reset weights</button>
+                          )}
+                        </div>
+                        {acctSugg.notes && <div style={{fontSize: '0.67rem', color: '#666', fontStyle: 'italic', marginBottom: '0.2rem'}}>{acctSugg.notes}</div>}
+                        {(() => {
+                          const accIdx2 = config.accounts.findIndex(a => a.name === acctName);
+                          const acctTotal = accIdx2 >= 0 ? (rebalanceState[accIdx2]?.accountTotal ?? null) : null;
+                          const sym = acct?.currency === 'USD' ? '$' : 'C$';
+                          const fmtVal = (pct) => acctTotal != null ? `${sym}${Math.round(pct / 100 * acctTotal).toLocaleString()}` : null;
+                          const ss = strategySort[acctName] || { col: null, dir: 'asc' };
+                          const toggleStrategySort = (col) => setStrategySort(prev => {
+                            const cur = prev[acctName];
+                            const dir = cur?.col === col ? (cur.dir === 'asc' ? 'desc' : 'asc') : (col === 'ticker' ? 'asc' : 'desc');
+                            return { ...prev, [acctName]: { col, dir } };
+                          });
+                          const sIcon = (col) => ss.col !== col
+                            ? <span style={{opacity: 0.25, marginLeft: '2px'}}>⇅</span>
+                            : <span style={{marginLeft: '2px'}}>{ss.dir === 'asc' ? '↑' : '↓'}</span>;
+                          const sThStyle = (col, align) => ({
+                            textAlign: align, padding: '0.1rem 0.3rem', fontWeight: 500,
+                            cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap',
+                            color: ss.col === col ? '#4338ca' : '#666',
+                          });
+                          const sortedExisting = [...existing, ...includedSugg].sort((a, b) => {
+                            if (!ss.col) return 0;
+                            const eff_a = getEffectiveWeight(acctName, a.ticker, a.targetWeight);
+                            const eff_b = getEffectiveWeight(acctName, b.ticker, b.targetWeight);
+                            const ka = ss.col === 'ticker' ? a.ticker : eff_a;
+                            const kb = ss.col === 'ticker' ? b.ticker : eff_b;
+                            const cmp = typeof ka === 'string' ? ka.localeCompare(kb) : ka - kb;
+                            return ss.dir === 'asc' ? cmp : -cmp;
+                          });
+                          return (
+                        <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.71rem'}}>
+                          <thead>
+                            <tr style={{borderBottom: '1px solid #e0e0e0'}}>
+                              <th style={sThStyle('ticker', 'left')} onClick={() => toggleStrategySort('ticker')}>Ticker{sIcon('ticker')}</th>
+                              <th style={sThStyle('target', 'right')} onClick={() => toggleStrategySort('target')}>Target %{sIcon('target')}</th>
+                              {acctTotal != null && <th style={sThStyle('value', 'right')} onClick={() => toggleStrategySort('value')}>{sym}{sIcon('value')}</th>}
+                              <th style={{textAlign: 'left', padding: '0.1rem 0.3rem', fontWeight: 500, color: '#666'}}>Rationale</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sortedExisting.map((t, ti) => {
+                              const eff = getEffectiveWeight(acctName, t.ticker, t.targetWeight);
+                              const isEdited = strategyEdits[acctName]?.targets?.[t.ticker] != null;
+                              const isExit = eff === 0;
+                              const isLocked = !!locks[t.ticker];
+                              const isIncludedSugg = !!(strategyIncluded[acctName]?.[t.ticker]);
+                              const canRedist = allTickers.filter(tk => tk !== t.ticker && !locks[tk]).length > 0;
+                              const prevTarget = acct?.stocks?.find(s => s.ticker === t.ticker)?.targetWeight;
+                              const prevChanged = prevTarget != null && prevTarget !== t.targetWeight;
+                              return (
+                                <tr key={ti} style={{borderBottom: '1px solid #f5f5f5', background: isIncludedSugg ? '#f0fdf4' : isLocked ? '#f9f9f9' : 'transparent', verticalAlign: 'top'}}>
+                                  <td style={{padding: '0.15rem 0.3rem', fontWeight: 500, opacity: isExit ? 0.5 : 1}}>
+                                    {t.ticker}
+                                    {isIncludedSugg && (
+                                      <button onClick={() => toggleInclude(t.ticker, t.targetWeight)}
+                                        style={{...btnStyle, marginLeft: '0.3rem', fontSize: '0.58rem', color: '#16a34a', border: '1px solid #86efac', borderRadius: '3px', padding: '0 0.2rem', lineHeight: '1.4'}}
+                                        title="Remove from plan">new ✕</button>
+                                    )}
+                                    {isExit && <span style={{marginLeft: '0.3rem', fontSize: '0.6rem', color: '#dc2626', fontWeight: 400}}>exit</span>}
+                                    {prevChanged && !isIncludedSugg && <div style={{fontSize: '0.6rem', color: '#9ca3af', fontWeight: 400, marginTop: '1px'}}>was {prevTarget}%</div>}
+                                  </td>
+                                  <td style={{textAlign: 'right', padding: '0.15rem 0.3rem', whiteSpace: 'nowrap'}}>
+                                    <button onClick={() => setStrategyLocks(prev => { const a = prev[acctName] || {}; const n = {...a}; if (n[t.ticker]) delete n[t.ticker]; else n[t.ticker] = true; return {...prev, [acctName]: n}; })}
+                                      title={isLocked ? 'Unlock (allow redistribution)' : 'Lock (exclude from redistribution)'}
+                                      style={{...btnStyle, fontSize: '0.68rem', marginRight: '0.2rem', opacity: isLocked ? 1 : 0.3}}>{isLocked ? '🔒' : '🔓'}</button>
+                                    <button onClick={() => redistributeWeight(acctName, t.ticker, Math.max(0, eff - 1), allTickers, fullOrigWeights)}
+                                      disabled={isExit || !canRedist} style={stepBtnStyle(isExit || !canRedist)}
+                                      title={!canRedist ? 'Unlock other holdings to redistribute' : ''}>−</button>
+                                    <input type="number" min="0" max="100" step="1" value={eff}
+                                      onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) redistributeWeight(acctName, t.ticker, v, allTickers, fullOrigWeights); }}
+                                      style={{width: '38px', textAlign: 'right', border: isEdited ? '1px solid #d97706' : '1px solid #e0e0e0', borderRadius: '3px', padding: '0.1rem 0.2rem', fontSize: '0.71rem', fontWeight: 600, color: isExit ? '#dc2626' : '#2563eb', background: isEdited ? '#fffbeb' : 'transparent', margin: '0 0.1rem'}} />
+                                    <button onClick={() => redistributeWeight(acctName, t.ticker, eff + 1, allTickers, fullOrigWeights)}
+                                      disabled={!canRedist} style={stepBtnStyle(!canRedist)}
+                                      title={!canRedist ? 'Unlock other holdings to redistribute' : ''}>+</button>
+                                  </td>
+                                  {acctTotal != null && <td style={{textAlign: 'right', padding: '0.15rem 0.3rem', color: '#888', fontSize: '0.67rem', whiteSpace: 'nowrap'}}>{fmtVal(eff)}</td>}
+                                  <td style={{padding: '0.15rem 0.3rem', color: '#555', fontStyle: 'italic', fontSize: '0.67rem'}}>
+                                    {t.rationale}
+                                    {isEdited && !isIncludedSugg && <button onClick={() => setStrategyEdits(prev => { const a = prev[acctName] || {}; const nt = {...(a.targets||{})}; delete nt[t.ticker]; return {...prev, [acctName]: {...a, targets: nt}}; })}
+                                      style={{...btnStyle, marginLeft: '0.3rem', fontSize: '0.6rem', color: '#aaa'}} title="Reset to AI">↩</button>}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {acctSugg.cashTargetWeight != null && (() => {
+                              const effCash = getEffectiveWeight(acctName, '__cash__', acctSugg.cashTargetWeight);
+                              const cashEdited = strategyEdits[acctName]?.cash != null;
+                              const cashLocked = !!locks['__cash__'];
+                              const canRedist = allTickers.filter(tk => tk !== '__cash__' && !locks[tk]).length > 0;
+                              return (
+                                <tr style={{borderTop: '1px solid #ddd', background: cashLocked ? '#f9f9f9' : 'transparent', verticalAlign: 'top'}}>
+                                  <td style={{padding: '0.15rem 0.3rem', color: '#555'}}>Cash</td>
+                                  <td style={{textAlign: 'right', padding: '0.15rem 0.3rem', whiteSpace: 'nowrap'}}>
+                                    <button onClick={() => setStrategyLocks(prev => { const a = prev[acctName] || {}; const n = {...a}; if (n['__cash__']) delete n['__cash__']; else n['__cash__'] = true; return {...prev, [acctName]: n}; })}
+                                      title={cashLocked ? 'Unlock cash' : 'Lock cash'}
+                                      style={{...btnStyle, fontSize: '0.68rem', marginRight: '0.2rem', opacity: cashLocked ? 1 : 0.3}}>{cashLocked ? '🔒' : '🔓'}</button>
+                                    <button onClick={() => redistributeWeight(acctName, '__cash__', Math.max(0, effCash - 1), allTickers, fullOrigWeights)}
+                                      disabled={effCash === 0 || !canRedist} style={stepBtnStyle(effCash === 0 || !canRedist)}>−</button>
+                                    <input type="number" min="0" max="100" step="1" value={effCash}
+                                      onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) redistributeWeight(acctName, '__cash__', v, allTickers, fullOrigWeights); }}
+                                      style={{width: '38px', textAlign: 'right', border: cashEdited ? '1px solid #d97706' : '1px solid #e0e0e0', borderRadius: '3px', padding: '0.1rem 0.2rem', fontSize: '0.71rem', fontWeight: 600, color: '#555', background: cashEdited ? '#fffbeb' : 'transparent', margin: '0 0.1rem'}} />
+                                    <button onClick={() => redistributeWeight(acctName, '__cash__', effCash + 1, allTickers, fullOrigWeights)}
+                                      disabled={!canRedist} style={stepBtnStyle(!canRedist)}>+</button>
+                                  </td>
+                                  {acctTotal != null && <td style={{textAlign: 'right', padding: '0.15rem 0.3rem', color: '#888', fontSize: '0.67rem', whiteSpace: 'nowrap'}}>{fmtVal(effCash)}</td>}
+                                  <td style={{padding: '0.15rem 0.3rem'}}>
+                                    {cashEdited && <button onClick={() => setStrategyEdits(prev => { const a = prev[acctName] || {}; return {...prev, [acctName]: {...a, cash: null}}; })}
+                                      style={{...btnStyle, fontSize: '0.6rem', color: '#aaa'}} title="Reset to AI">↩</button>}
+                                  </td>
+                                </tr>
+                              );
+                            })()}
+                          </tbody>
+                        </table>
+                          ); })()}
+                        {/* Live weight total */}
+                        {(() => {
+                          const over = total > 100;
+                          const exact = total === 100;
+                          return (
+                            <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.3rem', padding: '0.15rem 0.3rem', fontSize: '0.68rem', fontWeight: 600, color: over ? '#dc2626' : exact ? '#16a34a' : '#b45309'}}>
+                              {over && <span style={{fontWeight: 400, fontSize: '0.63rem'}}>exceeds 100% — adjust before applying</span>}
+                              {!over && !exact && <span style={{fontWeight: 400, fontSize: '0.63rem'}}>{(100 - total).toFixed(1)}% unallocated</span>}
+                              {exact && <span style={{fontWeight: 400, fontSize: '0.63rem'}}>✓</span>}
+                              <span>Total: {total}%</span>
+                            </div>
+                          );
+                        })()}
+                        {notIncludedSugg.length > 0 && (
+                          <div style={{marginTop: '0.4rem', padding: '0.4rem 0.5rem', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '4px'}}>
+                            <div style={{fontSize: '0.68rem', fontWeight: 600, color: '#92400e', marginBottom: '0.3rem'}}>Suggested additions</div>
+                            {notIncludedSugg.map((t, ti) => {
+                              return (
+                                <div key={ti} style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: ti < notIncludedSugg.length - 1 ? '0.35rem' : 0}}>
+                                  <span style={{fontWeight: 600, fontSize: '0.75rem', minWidth: '3rem'}}>{t.ticker}</span>
+                                  <span style={{fontSize: '0.71rem', color: '#2563eb', fontWeight: 600, minWidth: '2.5rem'}}>{t.targetWeight}%</span>
+                                  <span style={{flex: 1, color: '#555', fontStyle: 'italic', fontSize: '0.67rem'}}>{t.rationale}</span>
+                                  <label style={{display: 'inline-flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', userSelect: 'none', fontSize: '0.68rem', color: '#555', whiteSpace: 'nowrap'}}>
+                                    <div style={{position: 'relative', width: '28px', height: '15px', flexShrink: 0}}
+                                      onClick={() => toggleInclude(t.ticker, t.targetWeight)}>
+                                      <div style={{width: '28px', height: '15px', background: '#d1d5db', borderRadius: '99px', transition: 'background 0.15s'}} />
+                                      <div style={{position: 'absolute', top: '2px', left: '2px', width: '11px', height: '11px', background: 'white', borderRadius: '50%', boxShadow: '0 1px 2px rgba(0,0,0,0.2)', transition: 'left 0.15s'}} />
+                                    </div>
+                                    Include
+                                  </label>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div style={{textAlign: 'right', marginTop: '0.5rem'}}>
+                    <button className="btn btn-primary" onClick={() => {
+                      const merged = { ...s, accounts: s.accounts.map(acct => {
+                        const edits = strategyEdits[acct.accountName] || {};
+                        return { ...acct,
+                          cashTargetWeight: edits.cash != null ? edits.cash : acct.cashTargetWeight,
+                          targets: acct.targets.map(t => ({ ...t, targetWeight: edits.targets?.[t.ticker] != null ? edits.targets[t.ticker] : t.targetWeight }))
+                        };
+                      })};
+                      applyStrategy(merged);
+                    }}>Apply Strategy</button>
+                  </div>
+                  </>}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Copy for Claude */}
+          <div className="section">
+            <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.6rem', background: '#f0f7ff', border: '1px solid #bfdbfe', borderRadius: '4px'}}>
+              <button className="btn btn-secondary" onClick={copyForClaude} disabled={claudeLoading} style={{whiteSpace: 'nowrap'}}>
+                {claudeCopied ? '✓ Copied!' : claudeLoading ? 'Fetching prices…' : 'Copy for Claude'}
+              </button>
+              <span style={{fontSize: '0.68rem', color: '#555'}}>Fetches live prices, then copies your holdings to clipboard — paste into Claude for sector, risk, and diversification analysis.</span>
+            </div>
+          </div>
+
+          </>}
+
+          {editorTab === 'preview' && <>
+
+          {/* Display Options */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Display Options</h2>
+            </div>
+            <div style={{display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap'}}>
+              {[
+                { key: 'showChangeIcons', label: 'Icons' },
+                { key: 'showValue',       label: 'Value' },
+                { key: 'showChange',      label: 'Change' },
+                { key: 'showWeight',      label: 'Weight' },
+                { key: 'showPrice',       label: 'Price' },
+                { key: 'showAllInCAD',    label: 'All in C$' },
+                { key: 'showWarnings',      label: 'Warnings' },
+                { key: 'showWatching',      label: 'Watching' },
+                { key: 'showTickerSuffix',  label: '.TO suffix' },
+              ].map(({ key, label }) => (
+                <label key={key} style={{display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 400}}>
+                  <input type="checkbox" checked={getFormatOptions()[key]} onChange={() => { toggleFormatOption(key); setPreviewResult(null); }} />
+                  {label}
+                </label>
+              ))}
+              <label style={{display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', fontWeight: 400}}>
+                Sort
+                <select value={getFormatOptions().sortBy} onChange={(e) => { updateConfig('formatOptions', { ...getFormatOptions(), sortBy: e.target.value }); setPreviewResult(null); }} style={{fontSize: '0.75rem'}}>
+                  <option value="value">$ Value</option>
+                  <option value="alpha">A–Z</option>
+                  <option value="changePercent">% Change</option>
+                  <option value="change">$ Change</option>
+                  <option value="weight">Weight</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          {/* Preview & Test */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Preview & Test{config.alertRecipients.length > 0 && ` — post to ntfy: ${config.alertRecipients.join(', ')}`}</h2>
+            </div>
+
+            {/* Run buttons */}
+            <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap'}}>
+              <select value={previewFormatMode} onChange={(e) => setPreviewFormatMode(e.target.value)} style={{fontSize: '0.75rem'}} title="Report format">
+                {FORMAT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <button className="btn btn-primary" onClick={runPreview} disabled={previewLoading || smsLoading}>
+                {previewLoading ? 'Fetching…' : 'Show preview'}
+              </button>
+              <button className="btn btn-danger" onClick={runSMS} disabled={previewLoading || smsLoading || config.alertRecipients.length === 0}>
+                {smsLoading ? 'Posting…' : `Post to ntfy${config.alertRecipients.length > 0 ? ': ' + config.alertRecipients.join(', ') : ''}`}
+              </button>
+              {!smsResult && <span style={{fontSize: '0.65rem', color: '#888'}}>Fetches live prices via Yahoo, no message sent</span>}
+              {smsResult && smsResult.ok && <span style={{fontSize: '0.65rem', color: '#16a34a'}}>✓ Posted to ntfy</span>}
+              {smsResult && smsResult.error && <span style={{fontSize: '0.65rem', color: '#dc2626'}}>✗ {smsResult.error}</span>}
+            </div>
+
+            {/* Result — two bubbles side by side, or single bubble for rebalance */}
+            {previewResult && previewResult.charts && (
+              <div>
+                <div className="preview-label">Charts</div>
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', alignItems: 'start'}}>
+                  {previewResult.charts.map((chart, idx) => (
+                    <div key={idx} style={{textAlign: 'center'}}>
+                      <div style={{fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem', fontWeight: '500'}}>{chart.name}</div>
+                      {chart.error ? (
+                        <div style={{color: '#dc2626', fontSize: '0.75rem'}}>Error: {chart.error}</div>
+                      ) : (
+                        <img src={chart.url} alt={`${chart.name} chart`} style={{maxWidth: '100%', maxHeight: '400px', border: '1px solid #ddd', borderRadius: '4px'}} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {previewResult && (previewResult.detailed || previewResult.short) && !previewResult.charts && (
+              <div className="preview-grid">
+                <div>
+                  <div className="preview-label">Detailed</div>
+                  <div className="preview-bubble">{previewResult.detailed}</div>
+                </div>
+                <div>
+                  <div className="preview-label">Short</div>
+                  <div className="preview-bubble">{previewResult.short}</div>
+                </div>
+              </div>
+            )}
+            {previewResult && previewResult.text && (
+              <div>
+                <div className="preview-label">Sheet debug output</div>
+                <div className="preview-bubble" style={{fontFamily: 'monospace', fontSize: '0.7rem', whiteSpace: 'pre'}}>{previewResult.text}</div>
+              </div>
+            )}
+            {previewResult && previewResult.error && (
+              <div style={{fontSize: '0.75rem', color: '#dc2626'}}>
+                Error: {previewResult.error}
+              </div>
+            )}
+          </div>
+
+          </>}
+
+          {/* Rationale popup */}
+          {rationalePopup && (
+            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1100}} onClick={() => setRationalePopup(null)}>
+              <div style={{background:'#fff',borderRadius:'8px',padding:'1.25rem',maxWidth:'480px',width:'90%',boxShadow:'0 8px 32px rgba(0,0,0,0.2)'}} onClick={e => e.stopPropagation()}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.75rem'}}>
+                  <strong style={{fontSize:'0.9rem'}}>{rationalePopup.ticker} — Strategy Rationale</strong>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setRationalePopup(null)}>Close</button>
+                </div>
+                <p style={{fontSize:'0.82rem',lineHeight:1.55,color:'#374151',margin:0}}>{rationalePopup.rationale}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Claude modal fallback */}
+          {claudeModalText && (
+            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}} onClick={() => setClaudeModalText(null)}>
+              <div style={{background:'#fff',borderRadius:'8px',padding:'1.25rem',maxWidth:'640px',width:'90%',boxShadow:'0 8px 32px rgba(0,0,0,0.2)'}} onClick={e => e.stopPropagation()}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.6rem'}}>
+                  <strong style={{fontSize:'0.9rem'}}>Copy for Claude</strong>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setClaudeModalText(null)}>Close</button>
+                </div>
+                <p style={{fontSize:'0.7rem',color:'#666',marginBottom:'0.5rem'}}>Select all and copy (Cmd+A, Cmd+C), then paste into Claude.</p>
+                <textarea
+                  readOnly
+                  value={claudeModalText}
+                  onClick={e => e.target.select()}
+                  style={{width:'100%',height:'320px',fontFamily:'monospace',fontSize:'0.72rem',border:'1px solid #ccc',borderRadius:'4px',padding:'0.5rem',resize:'vertical'}}
+                />
+              </div>
+            </div>
+          )}
+          </div>{/* end paddingTop wrapper */}
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+
+  <!-- Tab Switching + Schedules Logic -->
+  <script>
+    function switchTab(tab) {
+      document.getElementById('panel-editor').style.display = tab === 'editor' ? '' : 'none';
+      document.getElementById('panel-schedules').style.display = tab === 'schedules' ? '' : 'none';
+      document.getElementById('tab-btn-editor').classList.toggle('active', tab === 'editor');
+      document.getElementById('tab-btn-schedules').classList.toggle('active', tab === 'schedules');
+      if (tab === 'schedules') loadSchedules();
+    }
+
+    async function loadSchedules() {
+      try {
+        const response = await fetch('/api/schedules');
+        const schedules = await response.json();
+
+        const container = document.getElementById('schedulesContent');
+
+        if (schedules.length === 0) {
+          container.innerHTML = `
+            <div class="sched-empty">
+              <div style="font-size: 48px; margin-bottom: 16px;">📅</div>
+              <p>No schedules configured yet.</p>
+              <p style="margin-top: 8px;">Create a report with a schedule in the editor.</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Group by report name, sort slots within each group by hour
+        const grouped = {};
+        for (const s of schedules) {
+          if (!grouped[s.reportName]) grouped[s.reportName] = [];
+          grouped[s.reportName].push(s);
+        }
+        for (const slots of Object.values(grouped)) {
+          slots.sort((a, b) => {
+            const hourA = parseInt(a.cronExpression.split(' ')[1]) || 0;
+            const hourB = parseInt(b.cronExpression.split(' ')[1]) || 0;
+            return hourA - hourB;
+          });
+        }
+
+        container.innerHTML = Object.entries(grouped).map(([reportName, slots]) => `
+          <div class="sched-report-card">
+            <div class="sched-report-name">${reportName}</div>
+            <div class="sched-table-wrap"><table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Format</th>
+                  <th>Last</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${slots.map(slot => `
+                  <tr>
+                    <td>${slot.schedule}</td>
+                    <td>${slot.format}</td>
+                    <td>${formatLastRun(slot.lastRun)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table></div>
+          </div>
+        `).join('');
+
+      } catch (error) {
+        document.getElementById('schedulesContent').innerHTML = `
+          <div class="sched-empty">
+            <p style="color: #dc3545;">Error loading schedules: ${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+function formatLastRun(lastRun) {
+      if (!lastRun) return '<span style="color:#bbb;">—</span>';
+      return `<span class="sched-timestamp">${formatTimestamp(lastRun).replace(' ago', '')}</span>`;
+    }
+
+    function formatTimestamp(timestamp) {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    }
+
+    async function runReportNow(reportName, format) {
+      try {
+        const response = await fetch('/api/reports');
+        const reports = await response.json();
+        const report = reports.find(r => r.reportName === reportName);
+
+        if (!report) {
+          alert('Report not found');
+          return;
+        }
+
+        const runResponse = await fetch(`/api/reports/${report.filename}/run`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ format })
+        });
+
+        const result = await runResponse.json();
+
+        if (result.success) {
+          alert(`Report "${reportName}" is running. SMS will be sent when complete.`);
+          setTimeout(loadSchedules, 2000);
+        } else {
+          alert('Error running report: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // Auto-refresh schedules every 30 seconds, only when tab is visible
+    setInterval(() => {
+      if (document.getElementById('panel-schedules').style.display !== 'none') {
+        loadSchedules();
+      }
+    }, 30000);
+  </script>
+</body>
+</html>

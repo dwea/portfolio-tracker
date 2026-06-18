@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portfolio Configuration Editor</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #111; font-size: 13px; line-height: 1.3; }
+    .app { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    h1 { font-size: 1.2rem; font-weight: 600; }
+    .subtitle { font-size: 0.8rem; margin-bottom: 0.75rem; }
+    .section { border: 1px solid #ddd; border-radius: 4px; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; background: #f0f0f0; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+    .section-title { font-size: 0.85rem; font-weight: 600; }
+    label { font-size: 0.7rem; font-weight: 500; }
+    input, select { border: 1px solid #ccc; border-radius: 3px; padding: 0.25rem 0.4rem; font-family: inherit; font-size: 13px; color: #111; background: #fff; }
+    input:focus, select:focus { outline: none; border-color: #2563eb; }
+    .btn { padding: 0.2rem 0.6rem; border: none; border-radius: 3px; font-family: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; white-space: nowrap; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #f3f4f6; color: #111; border: 1px solid #ccc; }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .btn-danger { background: #dc2626; color: #fff; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-sm { padding: 0.15rem 0.4rem; font-size: 0.7rem; }
+    .account-card { border: 1px solid #ddd; border-radius: 4px; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; background: #e8e8e8; }
+    .account-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; }
+    .account-header h3 { font-size: 0.85rem; font-weight: 600; }
+    .row { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+    .row + .row { margin-top: 0.25rem; }
+    .field { display: flex; flex-direction: column; gap: 1px; }
+    .field input, .field select { width: 100%; }
+    .holding-header { display: flex; gap: 0.35rem; padding: 0 0 0.15rem 0.5rem; border-left: 2px solid transparent; font-size: 0.65rem; font-weight: 500; color: #555; }
+    .hh-name { width: 90px; }
+    .hh-ticker { width: 100px; }
+    .hh-shares { width: 70px; }
+    .hh-trigger { width: 55px; }
+    .hh-btn { width: 22px; }
+    .holding-row { display: flex; gap: 0.35rem; align-items: center; padding: 0.15rem 0 0.15rem 0.5rem; border-left: 2px solid #2563eb; margin-bottom: 0.15rem; }
+    .hi-name { width: 90px; }
+    .hi-ticker { width: 100px; }
+    .hi-shares { width: 70px; }
+    .hi-trigger { width: 55px; }
+    .schedule-grid { display: flex; flex-direction: column; gap: 0.15rem; }
+    .schedule-grid-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0.25rem; border-radius: 3px; }
+    .schedule-grid-row:hover { background: #e8e8e8; }
+    .schedule-grid-row.checked { background: #e8f0fe; }
+    .schedule-grid-row label.hour-label { width: 65px; font-size: 0.75rem; font-weight: 400; cursor: pointer; }
+    .schedule-grid-row select { font-size: 0.7rem; padding: 0.15rem 0.3rem; }
+    .schedule-days-toggle { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; }
+    .schedule-days-toggle label { font-size: 0.75rem; cursor: pointer; }
+    .recipient-row { display: flex; gap: 0.4rem; align-items: flex-end; margin-bottom: 0.2rem; }
+    .recipient-row input { flex: 1; }
+    input[type="checkbox"] { width: 0.85rem; height: 0.85rem; accent-color: #2563eb; }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #666; }
+    .empty-state p { font-size: 0.85rem; }
+    .empty-state .row { justify-content: center; }
+
+    /* Top bar */
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .top-bar-actions { display: flex; gap: 0.4rem; align-items: center; }
+
+    /* Preview section */
+    .preview-mode-tabs { display: flex; gap: 0.25rem; margin-bottom: 0.5rem; }
+    .preview-tab { padding: 0.2rem 0.55rem; border: 1px solid #ccc; border-radius: 3px; font-size: 0.75rem; font-weight: 500; cursor: pointer; background: #f3f4f6; color: #555; }
+    .preview-tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .preview-bubble { background: #e5e5ea; border-radius: 12px 12px 4px 12px; padding: 0.6rem 0.8rem; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.72rem; white-space: pre-wrap; color: #111; max-width: 340px; line-height: 1.5; }
+    .preview-label { font-size: 0.65rem; color: #888; margin-bottom: 0.2rem; }
+    .cmd-row { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.35rem; }
+    .cmd-row input { flex: 1; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.78rem; background: #f9fafb; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Format value labels for the combined schedule dropdown
+    const FORMAT_OPTIONS = [
+      { value: 'detailed',    label: 'Detailed' },
+      { value: 'short',       label: 'Short' },
+      { value: 'detailed+chart', label: 'Detailed + Chart' },
+      { value: 'short+chart', label: 'Short + Chart' },
+      { value: 'chart-only',  label: 'Chart only' },
+    ];
+
+    // Decode a combined value back to { format, chart }
+    function decodeFormatValue(val) {
+      if (val === 'chart-only')     return { format: 'detailed', chart: 'image-only' };
+      if (val === 'detailed+chart') return { format: 'detailed', chart: 'image' };
+      if (val === 'short+chart')    return { format: 'short',    chart: 'image' };
+      if (val === 'short')          return { format: 'short',    chart: 'none' };
+      return { format: 'detailed', chart: 'none' };
+    }
+
+    // Encode { format, chart } back to a combined value
+    function encodeFormatValue(format, chart) {
+      if (chart === 'image-only') return 'chart-only';
+      if (chart === 'image' && format === 'short') return 'short+chart';
+      if (chart === 'image') return 'detailed+chart';
+      if (format === 'short') return 'short';
+      return 'detailed';
+    }
+
+    function App() {
+      const [config, setConfig] = useState(null);
+      const [cmdCopied, setCmdCopied] = useState(false);
+      const [previewMode, setPreviewMode] = useState('mock'); // 'mock' | 'live'
+      const [previewFormat, setPreviewFormat] = useState('detailed');
+      const [previewChart, setPreviewChart] = useState(false);
+      const [liveResult, setLiveResult] = useState(null); // { message, error }
+      const [liveLoading, setLiveLoading] = useState(false);
+      const [savedReports, setSavedReports] = useState([]);
+      const [currentFilename, setCurrentFilename] = useState(null);
+
+      useEffect(() => {
+        fetch('/api/reports')
+          .then(r => r.json())
+          .then(data => { if (Array.isArray(data)) setSavedReports(data); })
+          .catch(() => {});
+      }, []);
+
+      const SCHEDULE_HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+      const HOUR_LABELS = { 7:'7:00 AM', 8:'8:00 AM', 9:'9:00 AM', 10:'10:00 AM', 11:'11:00 AM', 12:'12:00 PM', 13:'1:00 PM', 14:'2:00 PM', 15:'3:00 PM', 16:'4:00 PM' };
+
+      const updateConfig = (path, value) => {
+        setConfig(prev => {
+          const newConfig = JSON.parse(JSON.stringify(prev));
+          const keys = path.split('.');
+          let current = newConfig;
+          for (let i = 0; i < keys.length - 1; i++) {
+            current = current[keys[i]];
+          }
+          current[keys[keys.length - 1]] = value;
+          return newConfig;
+        });
+      };
+
+      // Parse existing schedules into grid state
+      const parseSchedulesToGrid = (schedules) => {
+        let weekdaysOnly = true;
+        const hours = {};
+        for (const s of schedules) {
+          let match = s.when.match(/^(weekdays|daily)-at-(\d+)$/);
+          if (match) {
+            if (match[1] === 'daily') weekdaysOnly = false;
+            hours[parseInt(match[2])] = { format: s.format || 'detailed', chart: s.chart || 'none' };
+            continue;
+          }
+          match = s.when.match(/^(weekdays|daily)-at-(\d+)(am|pm)$/);
+          if (match) {
+            if (match[1] === 'daily') weekdaysOnly = false;
+            let h = parseInt(match[2]);
+            if (match[3] === 'pm' && h !== 12) h += 12;
+            if (match[3] === 'am' && h === 12) h = 0;
+            hours[h] = { format: s.format || 'detailed', chart: s.chart || 'none' };
+          }
+        }
+        return { weekdaysOnly, hours };
+      };
+
+      const gridToSchedules = (weekdaysOnly, hours) => {
+        const prefix = weekdaysOnly ? 'weekdays' : 'daily';
+        return Object.entries(hours)
+          .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+          .map(([hour, { format, chart }]) => {
+            const s = { when: `${prefix}-at-${hour}`, format };
+            if (chart && chart !== 'none') s.chart = chart;
+            return s;
+          });
+      };
+
+      const toggleScheduleHour = (hour) => {
+        setConfig(prev => {
+          const { weekdaysOnly, hours } = parseSchedulesToGrid(prev.schedules);
+          if (hours[hour]) { delete hours[hour]; } else { hours[hour] = { format: 'detailed', chart: 'none' }; }
+          return { ...prev, schedules: gridToSchedules(weekdaysOnly, hours) };
+        });
+      };
+
+      const setScheduleHourCombined = (hour, combinedVal) => {
+        const { format, chart } = decodeFormatValue(combinedVal);
+        setConfig(prev => {
+          const { weekdaysOnly, hours } = parseSchedulesToGrid(prev.schedules);
+          hours[hour] = { format, chart };
+          return { ...prev, schedules: gridToSchedules(weekdaysOnly, hours) };
+        });
+      };
+
+      const setScheduleWeekdays = (weekdaysOnly) => {
+        setConfig(prev => {
+          const { hours } = parseSchedulesToGrid(prev.schedules);
+          return { ...prev, schedules: gridToSchedules(weekdaysOnly, hours) };
+        });
+      };
+
+      const addAccount = () => {
+        setConfig(prev => ({ ...prev, accounts: [...prev.accounts, { name: "New Account", stocks: [], cash: 0, currency: "CAD" }] }));
+      };
+      const removeAccount = (index) => {
+        setConfig(prev => ({ ...prev, accounts: prev.accounts.filter((_, i) => i !== index) }));
+      };
+      const addHolding = (accountIndex) => {
+        setConfig(prev => {
+          const newConfig = JSON.parse(JSON.stringify(prev));
+          newConfig.accounts[accountIndex].stocks.push({ ticker: "TSE:", shares: 0 });
+          return newConfig;
+        });
+      };
+      const removeHolding = (accountIndex, holdingIndex) => {
+        setConfig(prev => {
+          const newConfig = JSON.parse(JSON.stringify(prev));
+          newConfig.accounts[accountIndex].stocks = newConfig.accounts[accountIndex].stocks.filter((_, i) => i !== holdingIndex);
+          return newConfig;
+        });
+      };
+      const addRecipient = () => {
+        setConfig(prev => ({ ...prev, alertRecipients: [...prev.alertRecipients, ""] }));
+      };
+      const removeRecipient = (index) => {
+        setConfig(prev => ({ ...prev, alertRecipients: prev.alertRecipients.filter((_, i) => i !== index) }));
+      };
+
+      const newConfig = () => {
+        setConfig({
+          reportName: "New_report",
+          schedules: [],
+          alertRecipients: [],
+          accounts: []
+        });
+      };
+
+      const loadFromServer = async (filename) => {
+        try {
+          const resp = await fetch(`/api/reports/${filename}`);
+          const data = await resp.json();
+          setConfig(data);
+          setCurrentFilename(filename);
+          setLiveResult(null);
+        } catch (err) {
+          alert('Failed to load report');
+        }
+      };
+
+      const loadJSON = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            try {
+              setConfig(JSON.parse(evt.target.result));
+              setCurrentFilename(null);
+            }
+            catch (err) { alert('Invalid JSON file'); }
+          };
+          reader.readAsText(file);
+        };
+        input.click();
+      };
+
+      const saveJSON = async () => {
+        const filename = currentFilename || config.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.json';
+        try {
+          const resp = await fetch(`/api/reports/${filename}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+          });
+          if (resp.ok) {
+            setCurrentFilename(filename);
+            setSavedReports(prev => prev.includes(filename) ? prev : [...prev, filename]);
+          }
+        } catch (err) {
+          // Server not available — fall back to download
+          const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      };
+
+      // Build preview/run command
+      const buildCommand = (format, testMode, mockMode) => {
+        let cmd = `npx tsx src/runner.ts "${config.reportName}" ${format}`;
+        if (testMode) cmd += ' test';
+        if (mockMode) cmd += ' mock';
+        return cmd;
+      };
+
+      const copyCommand = (cmd) => {
+        navigator.clipboard.writeText(cmd);
+        setCmdCopied(true);
+        setTimeout(() => setCmdCopied(false), 2000);
+      };
+
+      const runLivePreview = async () => {
+        setLiveLoading(true);
+        setLiveResult(null);
+        const filename = currentFilename || config.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.json';
+        try {
+          // Save to server first so the preview endpoint can read it
+          await fetch(`/api/reports/${filename}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+          });
+          // Then run preview
+          const resp = await fetch(`/api/reports/${filename}/preview`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ format: previewFormat, source: 'yahoo' })
+          });
+          const data = await resp.json();
+          if (data.error) throw new Error(data.error);
+          setLiveResult({ message: data.message });
+        } catch (err) {
+          setLiveResult({ error: err.message });
+        } finally {
+          setLiveLoading(false);
+        }
+      };
+
+      // Mock data for preview
+      const MOCK_DATA = {
+        reportName: config ? config.reportName : 'Preview',
+        timestamp: new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
+        grandTotal: 215430,
+        grandTotalChange: 1243,
+        grandTotalChangePct: 0.58,
+        accounts: [
+          {
+            name: 'TFSA',
+            total: 215430,
+            totalChange: 1243,
+            totalChangePct: 0.58,
+            stocks: [
+              { name: 'XDIV', ticker: 'TSE:XDIV', shares: 1300, price: 25.12, value: 32656, valuePct: 15.2, dayChange: 0.08, dayChangePct: 0.32 },
+              { name: 'ZAG', ticker: 'TSE:ZAG', shares: 800, price: 14.88, value: 11904, valuePct: 5.5, dayChange: -0.03, dayChangePct: -0.20 },
+            ],
+            cash: 5616,
+          }
+        ]
+      };
+
+      const formatPreview = (data, format) => {
+        const fmtCur = (v) => v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        const fmtChg = (v, p) => { const s = v >= 0 ? '＋' : '－'; return `${s}${Math.abs(p).toFixed(1)}% (${s}$${fmtCur(Math.abs(v))})`; };
+        const icon = (v) => v > 0 ? '▲' : v < 0 ? '▼' : '';
+
+        let o = `${data.reportName}\n${data.timestamp}\n`;
+
+        if (format === 'short') {
+          const gi = icon(data.grandTotalChange);
+          o += `\n${gi}${gi ? ' ' : ''}Total: $${fmtCur(data.grandTotal)} ${fmtChg(data.grandTotalChange, data.grandTotalChangePct)}`;
+          for (const acc of data.accounts) {
+            const ai = icon(acc.totalChange);
+            o += `\n\n${acc.name}: $${fmtCur(acc.total)} ${fmtChg(acc.totalChange, acc.totalChangePct)}`;
+          }
+        } else {
+          for (const acc of data.accounts) {
+            o += `\n${acc.name}\n`;
+            for (const s of acc.stocks) {
+              const di = icon(s.dayChange);
+              o += `  ${s.name || s.ticker}  $${s.price.toFixed(2)}  ${di}${Math.abs(s.dayChangePct).toFixed(1)}%\n`;
+              o += `    ${fmtCur(s.shares)} sh · $${fmtCur(s.value)} · ${s.valuePct.toFixed(1)}%\n`;
+            }
+            if (acc.cash) o += `  Cash  $${fmtCur(acc.cash)}\n`;
+            o += `  Total  $${fmtCur(acc.total)}  ${fmtChg(acc.totalChange, acc.totalChangePct)}\n`;
+          }
+          o += `\nTotal  $${fmtCur(data.grandTotal)}  ${fmtChg(data.grandTotalChange, data.grandTotalChangePct)}`;
+        }
+        return o;
+      };
+
+      // ── TOP BAR (always visible) ─────────────────────────────────────
+      const topBar = (
+        <div className="top-bar">
+          <div style={{display: 'flex', alignItems: 'baseline', gap: '0.6rem'}}>
+            <h1>Portfolio Config Editor</h1>
+            {config && currentFilename && <span style={{fontSize: '0.75rem', color: '#888'}}>{currentFilename}</span>}
+          </div>
+          <div className="top-bar-actions">
+            {savedReports.length > 0 && (
+              <select
+                value={currentFilename || ''}
+                onChange={(e) => e.target.value && loadFromServer(e.target.value)}
+                style={{fontSize: '0.75rem'}}
+              >
+                <option value="">Switch report…</option>
+                {savedReports.map(f => <option key={f} value={f}>{f.replace('.json', '')}</option>)}
+              </select>
+            )}
+            <button className="btn btn-secondary" onClick={newConfig}>New</button>
+            <button className="btn btn-secondary" onClick={loadJSON}>Open</button>
+            {config && <button className="btn btn-primary" onClick={saveJSON}>Save</button>}
+          </div>
+        </div>
+      );
+
+      // ── EMPTY STATE ──────────────────────────────────────────────────
+      if (!config) {
+        return (
+          <div className="app">
+            {topBar}
+            <div className="empty-state">
+              {savedReports.length > 0 ? (
+                <div>
+                  <p style={{marginBottom: '0.75rem'}}>Select a report to edit:</p>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'center'}}>
+                    {savedReports.map(f => (
+                      <button key={f} className="btn btn-secondary" style={{width: '200px'}} onClick={() => loadFromServer(f)}>
+                        {f.replace('.json', '')}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center'}}>
+                    <button className="btn btn-primary" onClick={newConfig}>New Report</button>
+                    <button className="btn btn-secondary" onClick={loadJSON}>Open JSON file</button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p>No reports found. Create a new report or open a JSON file.</p>
+                  <div className="row" style={{marginTop: '0.75rem'}}>
+                    <button className="btn btn-primary" onClick={newConfig}>New Report</button>
+                    <button className="btn btn-secondary" onClick={loadJSON}>Open JSON</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // ── FORM ─────────────────────────────────────────────────────────
+      const { weekdaysOnly, hours } = parseSchedulesToGrid(config.schedules);
+
+      const liveCmd = buildCommand(previewFormat, true, false);
+      const mockCmd = buildCommand(previewFormat, true, true);
+
+      return (
+        <div className="app">
+          {topBar}
+
+          {/* Report Details */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Report Details</h2>
+            </div>
+            <div className="row">
+              <div className="field">
+                <label>Report Name</label>
+                <input type="text" value={config.reportName} onChange={(e) => updateConfig('reportName', e.target.value)} placeholder="Daves_report" style={{width: '200px'}} />
+              </div>
+            </div>
+          </div>
+
+          {/* Schedules */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Schedules</h2>
+            </div>
+            <div className="schedule-days-toggle">
+              <label>
+                <input type="checkbox" checked={weekdaysOnly} onChange={(e) => setScheduleWeekdays(e.target.checked)} />
+                {' '}Weekdays only
+              </label>
+              <span style={{fontSize: '0.65rem', color: '#666'}}>{weekdaysOnly ? 'Mon–Fri' : 'Every day'}</span>
+            </div>
+            <div className="schedule-grid">
+              {SCHEDULE_HOURS.map(hour => {
+                const checked = !!hours[hour];
+                const hourData = hours[hour] || { format: 'detailed', chart: 'none' };
+                const combinedVal = encodeFormatValue(hourData.format, hourData.chart);
+                return (
+                  <div key={hour} className={`schedule-grid-row${checked ? ' checked' : ''}`}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleScheduleHour(hour)} />
+                    <label className="hour-label" onClick={() => toggleScheduleHour(hour)}>{HOUR_LABELS[hour]}</label>
+                    {checked && (
+                      <select value={combinedVal} onChange={(e) => setScheduleHourCombined(hour, e.target.value)}>
+                        {FORMAT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Recipients */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Recipients</h2>
+              <button className="btn btn-secondary btn-sm" onClick={addRecipient}>+ Add</button>
+            </div>
+            {config.alertRecipients.map((recipient, idx) => (
+              <div key={idx} className="recipient-row">
+                <input type="text" value={recipient} onChange={(e) => updateConfig(`alertRecipients.${idx}`, e.target.value)} placeholder="+16047671579" />
+                <button className="btn btn-danger btn-sm" onClick={() => removeRecipient(idx)}>×</button>
+              </div>
+            ))}
+          </div>
+
+          {/* Accounts */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Accounts</h2>
+              <button className="btn btn-secondary btn-sm" onClick={addAccount}>+ Add Account</button>
+            </div>
+            {config.accounts.map((account, accIdx) => (
+              <div key={accIdx} className="account-card">
+                <div className="account-header">
+                  <h3>{account.name}</h3>
+                  <button className="btn btn-danger btn-sm" onClick={() => removeAccount(accIdx)}>Remove</button>
+                </div>
+                <div className="row">
+                  <div className="field">
+                    <label>Name</label>
+                    <input type="text" value={account.name} onChange={(e) => updateConfig(`accounts.${accIdx}.name`, e.target.value)} style={{width: '120px'}} />
+                  </div>
+                  <div className="field">
+                    <label>Currency</label>
+                    <select value={account.currency} onChange={(e) => updateConfig(`accounts.${accIdx}.currency`, e.target.value)} style={{width: '65px'}}>
+                      <option value="CAD">CAD</option>
+                      <option value="USD">USD</option>
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Cash</label>
+                    <input type="number" value={account.cash} onChange={(e) => updateConfig(`accounts.${accIdx}.cash`, parseFloat(e.target.value) || 0)} style={{width: '90px'}} />
+                  </div>
+                  <div className="field">
+                    <label>Starting Val</label>
+                    <input type="number" value={account.startingValue || ''} onChange={(e) => updateConfig(`accounts.${accIdx}.startingValue`, parseFloat(e.target.value) || undefined)} style={{width: '90px'}} placeholder="—" />
+                  </div>
+                  <div className="field">
+                    <label>Target Val</label>
+                    <input type="number" value={account.targetValue || ''} onChange={(e) => updateConfig(`accounts.${accIdx}.targetValue`, parseFloat(e.target.value) || undefined)} style={{width: '90px'}} placeholder="—" />
+                  </div>
+                </div>
+                <div style={{marginTop: '0.35rem'}}>
+                  <div className="row" style={{marginBottom: '0.2rem'}}>
+                    <label style={{flex: 1}}>Holdings</label>
+                    <button className="btn btn-secondary btn-sm" onClick={() => addHolding(accIdx)}>+ Add</button>
+                  </div>
+                  {account.stocks.length > 0 && (
+                    <div className="holding-header">
+                      <span className="hh-name">Name</span>
+                      <span className="hh-ticker">Ticker</span>
+                      <span className="hh-shares">Shares</span>
+                      <span className="hh-trigger">Wt Hi%</span>
+                      <span className="hh-trigger">Wt Lo%</span>
+                      <span className="hh-trigger">Price Hi</span>
+                      <span className="hh-trigger">Price Lo</span>
+                      <span className="hh-trigger">Day Δ%</span>
+                      <span className="hh-btn"></span>
+                    </div>
+                  )}
+                  {account.stocks.map((stock, stockIdx) => (
+                    <div key={stockIdx} className="holding-row">
+                      <input className="hi-name" type="text" value={stock.name || ''} onChange={(e) => updateConfig(`accounts.${accIdx}.stocks.${stockIdx}.name`, e.target.value || undefined)} placeholder="Optional" />
+                      <input className="hi-ticker" type="text" value={stock.ticker} onChange={(e) => updateConfig(`accounts.${accIdx}.stocks.${stockIdx}.ticker`, e.target.value)} placeholder="TSE:XDIV" />
+                      <input className="hi-shares" type="number" value={stock.shares} onChange={(e) => updateConfig(`accounts.${accIdx}.stocks.${stockIdx}.shares`, parseFloat(e.target.value) || 0)} />
+                      <input className="hi-trigger" type="number" value={stock.weightTriggerAbove || ''} onChange={(e) => updateConfig(`accounts.${accIdx}.stocks.${stockIdx}.weightTriggerAbove`, parseFloat(e.target.value) || undefined)} placeholder="—" />
+                      <input className="hi-trigger" type="number" value={stock.weightTriggerBelow || ''} onChange={(e) => updateConfig(`accounts.${accIdx}.stocks.${stockIdx}.weightTriggerBelow`, parseFloat(e.target.value) || undefined)} placeholder="—" />
+                      <input className="hi-trigger" type="number" value={stock.priceTriggerAbove || ''} onChange={(e) => updateConfig(`accounts.${accIdx}.stocks.${stockIdx}.priceTriggerAbove`, parseFloat(e.target.value) || undefined)} placeholder="—" />
+                      <input className="hi-trigger" type="number" value={stock.priceTriggerBelow || ''} onChange={(e) => updateConfig(`accounts.${accIdx}.stocks.${stockIdx}.priceTriggerBelow`, parseFloat(e.target.value) || undefined)} placeholder="—" />
+                      <input className="hi-trigger" type="number" value={stock.dayChangeTrigger || ''} onChange={(e) => updateConfig(`accounts.${accIdx}.stocks.${stockIdx}.dayChangeTrigger`, parseFloat(e.target.value) || undefined)} placeholder="—" />
+                      <button className="btn btn-danger btn-sm" onClick={() => removeHolding(accIdx, stockIdx)}>×</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Preview & Test */}
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">Preview & Test</h2>
+              <div className="field">
+                <label>Format</label>
+                <select value={previewFormat} onChange={(e) => setPreviewFormat(e.target.value)} style={{width: '100px'}}>
+                  <option value="detailed">Detailed</option>
+                  <option value="short">Short</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="preview-mode-tabs">
+              <button className={`preview-tab${previewMode === 'mock' ? ' active' : ''}`} onClick={() => setPreviewMode('mock')}>Mock preview</button>
+              <button className={`preview-tab${previewMode === 'live' ? ' active' : ''}`} onClick={() => setPreviewMode('live')}>Live test (no send)</button>
+            </div>
+
+            {previewMode === 'mock' && (
+              <div>
+                <div className="preview-label">iMessage preview (sample data)</div>
+                <div className="preview-bubble">
+                  {formatPreview({ ...MOCK_DATA, reportName: config.reportName }, previewFormat)}
+                </div>
+              </div>
+            )}
+
+            {previewMode === 'live' && (
+              <div>
+                <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem'}}>
+                  <button className="btn btn-primary" onClick={runLivePreview} disabled={liveLoading}>
+                    {liveLoading ? 'Fetching…' : 'Run live preview'}
+                  </button>
+                  <span style={{fontSize: '0.65rem', color: '#888'}}>Saves config + fetches live prices, no message sent</span>
+                </div>
+                {liveResult && liveResult.message && (
+                  <div>
+                    <div className="preview-label">Live result</div>
+                    <div className="preview-bubble">{liveResult.message}</div>
+                  </div>
+                )}
+                {liveResult && liveResult.error && (
+                  <div style={{fontSize: '0.75rem', color: '#dc2626', marginBottom: '0.4rem'}}>
+                    Error: {liveResult.error}
+                    <span style={{marginLeft: '0.5rem', color: '#888'}}>— is the server running?</span>
+                  </div>
+                )}
+                <p style={{fontSize: '0.65rem', color: '#999', marginTop: '0.5rem', borderTop: '1px solid #ddd', paddingTop: '0.4rem'}}>
+                  Or run manually in terminal:
+                </p>
+                <div className="cmd-row">
+                  <input type="text" readOnly value={liveCmd} onClick={(e) => e.target.select()} />
+                  <button className="btn btn-secondary btn-sm" onClick={() => copyCommand(liveCmd)}>
+                    {cmdCopied ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>

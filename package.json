@@ -1,0 +1,30 @@
+{
+  "name": "portfolio-tracker",
+  "version": "1.0.0",
+  "description": "Portfolio tracking system with automated text reports",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/runner.ts",
+    "test": "tsx src/runner.ts \"Daves_report\" detailed",
+    "server": "tsx server.js"
+  },
+  "keywords": [
+    "portfolio",
+    "finance",
+    "tracking"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@types/node": "^20.11.0",
+    "sql.js": "^1.8.0",
+    "dotenv": "^17.3.1",
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "sharp": "^0.34.5",
+    "tsx": "^4.7.0",
+    "twilio": "^6.0.0",
+    "yahoo-finance2": "^3.13.1"
+  }
+}

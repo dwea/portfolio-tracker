@@ -1,0 +1,889 @@
+{
+  "reportName": "Report B",
+  "schedules": [
+    {
+      "when": "weekdays-at-7",
+      "format": "short"
+    },
+    {
+      "when": "weekdays-at-14",
+      "format": "short"
+    },
+    {
+      "when": "weekdays-at-15",
+      "format": "charts"
+    }
+  ],
+  "alertRecipients": [
+    "portfolio-b-1092385q"
+  ],
+  "accounts": [
+    {
+      "name": "Registered-1",
+      "stocks": [
+        {
+          "ticker": "ABBV",
+          "shares": 29,
+          "name": "ABBV",
+          "targetWeight": 4,
+          "weightTriggerAbove": 10,
+          "weightTriggerBelow": 2,
+          "priceTriggerAbove": 225,
+          "priceTriggerBelow": 180
+        },
+        {
+          "ticker": "COST",
+          "shares": 10,
+          "name": "COST",
+          "targetWeight": 5,
+          "weightTriggerAbove": 11,
+          "weightTriggerBelow": 3,
+          "priceTriggerAbove": 1100,
+          "priceTriggerBelow": 880
+        },
+        {
+          "ticker": "FMS",
+          "shares": 200,
+          "name": "FMS",
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 23,
+          "priceTriggerBelow": 18
+        },
+        {
+          "ticker": "IVV",
+          "shares": 10,
+          "name": "IVV",
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 800,
+          "priceTriggerBelow": 650
+        },
+        {
+          "ticker": "MDGL",
+          "shares": 15,
+          "name": "MDGL",
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 600,
+          "priceTriggerBelow": 450
+        },
+        {
+          "ticker": "MFC.TO",
+          "shares": 101,
+          "name": "MFC",
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 60,
+          "priceTriggerBelow": 48
+        },
+        {
+          "ticker": "MSFT",
+          "shares": 25,
+          "name": "MSFT",
+          "targetWeight": 5,
+          "weightTriggerAbove": 11,
+          "priceTriggerAbove": 470,
+          "priceTriggerBelow": 370,
+          "weightTriggerBelow": 3
+        },
+        {
+          "ticker": "NVDA",
+          "shares": 80,
+          "name": "NVDA",
+          "targetWeight": 8,
+          "weightTriggerAbove": 14,
+          "weightTriggerBelow": 4,
+          "priceTriggerAbove": 240,
+          "priceTriggerBelow": 170
+        },
+        {
+          "ticker": "QYLD",
+          "shares": 244,
+          "name": "QYLD",
+          "targetWeight": 6,
+          "weightTriggerAbove": 12,
+          "priceTriggerAbove": 20,
+          "priceTriggerBelow": 16,
+          "weightTriggerBelow": 2
+        },
+        {
+          "ticker": "RY.TO",
+          "shares": 20,
+          "name": "RY",
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 270,
+          "priceTriggerBelow": 220
+        },
+        {
+          "ticker": "SGOV",
+          "shares": 350,
+          "name": "SGOV",
+          "targetWeight": 14,
+          "weightTriggerAbove": 20,
+          "weightTriggerBelow": 8,
+          "priceTriggerAbove": 101,
+          "priceTriggerBelow": 99.5
+        },
+        {
+          "ticker": "SHOP.TO",
+          "shares": 10,
+          "name": "SHOP",
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 165,
+          "priceTriggerBelow": 130
+        },
+        {
+          "ticker": "SOUN",
+          "shares": 100,
+          "name": "SOUN",
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 12,
+          "priceTriggerBelow": 7
+        },
+        {
+          "ticker": "SPYI",
+          "shares": 295,
+          "name": "SPYI",
+          "targetWeight": 13,
+          "weightTriggerAbove": 19,
+          "weightTriggerBelow": 7,
+          "priceTriggerAbove": 58,
+          "priceTriggerBelow": 47
+        },
+        {
+          "ticker": "XDIV.TO",
+          "shares": 803,
+          "name": "XDIV",
+          "targetWeight": 22,
+          "weightTriggerAbove": 28,
+          "weightTriggerBelow": 16,
+          "priceTriggerAbove": 47,
+          "priceTriggerBelow": 37
+        },
+        {
+          "ticker": "ZMMK.TO",
+          "shares": 1689,
+          "name": "ZMMK",
+          "targetWeight": 14,
+          "weightTriggerAbove": 20,
+          "weightTriggerBelow": 8,
+          "priceTriggerAbove": 51,
+          "priceTriggerBelow": 48.5
+        },
+        {
+          "ticker": "AMZN",
+          "shares": 0,
+          "name": "AMZN"
+        },
+        {
+          "ticker": "PICK",
+          "shares": 0,
+          "name": "PICK"
+        },
+        {
+          "ticker": "SPY",
+          "shares": 0,
+          "name": "SPY"
+        },
+        {
+          "ticker": "TQQQ",
+          "shares": 0,
+          "name": "TQQQ"
+        },
+        {
+          "ticker": "XIN.TO",
+          "shares": 0,
+          "name": "XIN"
+        },
+        {
+          "ticker": "XIU.TO",
+          "shares": 0,
+          "name": "XIU"
+        },
+        {
+          "ticker": "EFA",
+          "name": "EFA",
+          "shares": 0
+        },
+        {
+          "ticker": "QQQI",
+          "shares": 100
+        },
+        {
+          "ticker": "VYMI",
+          "name": "VYMI",
+          "shares": 41
+        }
+      ],
+      "cash": 34000,
+      "currency": "CAD",
+      "dayChangeTrigger": 5,
+      "near52WkLow": 0.5,
+      "near52WkHigh": 0.5
+    },
+    {
+      "name": "Registered-2",
+      "stocks": [
+        {
+          "ticker": "XSP.TO",
+          "name": "XSP",
+          "shares": 582,
+          "targetWeight": 40,
+          "weightTriggerAbove": 46,
+          "priceTriggerAbove": 82,
+          "priceTriggerBelow": 65,
+          "weightTriggerBelow": 34
+        },
+        {
+          "ticker": "XDIV.TO",
+          "name": "XDIV",
+          "shares": 402,
+          "targetWeight": 45,
+          "weightTriggerAbove": 51,
+          "weightTriggerBelow": 39,
+          "priceTriggerAbove": 47,
+          "priceTriggerBelow": 37
+        },
+        {
+          "ticker": "IG1332",
+          "name": "IG1332",
+          "shares": 1007.26,
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 0,
+          "priceTriggerBelow": 0
+        },
+        {
+          "ticker": "XEU.TO",
+          "name": "XEU",
+          "shares": 359,
+          "targetWeight": 10,
+          "weightTriggerAbove": 16,
+          "priceTriggerAbove": 44,
+          "priceTriggerBelow": 35,
+          "weightTriggerBelow": 4
+        }
+      ],
+      "cash": 4035,
+      "currency": "CAD"
+    },
+    {
+      "name": "Registered-3",
+      "stocks": [
+        {
+          "ticker": "XDIV.TO",
+          "name": "XDIV",
+          "shares": 111,
+          "targetWeight": 50,
+          "weightTriggerAbove": 28,
+          "weightTriggerBelow": 14,
+          "priceTriggerAbove": 47,
+          "priceTriggerBelow": 37
+        },
+        {
+          "ticker": "XEQT.TO",
+          "name": "XEQT",
+          "shares": 200
+        }
+      ],
+      "cash": 9587,
+      "currency": "CAD"
+    },
+    {
+      "name": "Registered-4",
+      "stocks": [
+        {
+          "ticker": "ZAG.TO",
+          "name": "ZAG",
+          "shares": 765,
+          "targetWeight": 10,
+          "weightTriggerAbove": 16,
+          "weightTriggerBelow": 4,
+          "priceTriggerAbove": 15,
+          "priceTriggerBelow": 12.5
+        },
+        {
+          "ticker": "XEF.TO",
+          "name": "XEF",
+          "shares": 409,
+          "targetWeight": 10,
+          "weightTriggerAbove": 16,
+          "priceTriggerAbove": 56,
+          "priceTriggerBelow": 44,
+          "weightTriggerBelow": 4
+        },
+        {
+          "ticker": "CASH.TO",
+          "name": "CASH.TO",
+          "shares": 299,
+          "targetWeight": 15,
+          "weightTriggerAbove": 21,
+          "weightTriggerBelow": 9,
+          "priceTriggerAbove": 51,
+          "priceTriggerBelow": 49
+        },
+        {
+          "ticker": "YGOG.NE",
+          "name": "YGOG",
+          "shares": 210,
+          "targetWeight": 5,
+          "weightTriggerAbove": 11,
+          "weightTriggerBelow": 2,
+          "priceTriggerAbove": 75,
+          "priceTriggerBelow": 57
+        },
+        {
+          "ticker": "PHYS",
+          "name": "PHYS",
+          "shares": 100,
+          "targetWeight": 25,
+          "weightTriggerAbove": 31,
+          "weightTriggerBelow": 19,
+          "priceTriggerAbove": 42,
+          "priceTriggerBelow": 30
+        },
+        {
+          "ticker": "XEQT.TO",
+          "name": "XEQT",
+          "shares": 100,
+          "targetWeight": 20,
+          "weightTriggerAbove": 26,
+          "weightTriggerBelow": 14,
+          "priceTriggerAbove": 49,
+          "priceTriggerBelow": 38
+        },
+        {
+          "ticker": "VOO",
+          "name": "VOO",
+          "shares": 16,
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 730,
+          "priceTriggerBelow": 610
+        },
+        {
+          "ticker": "AAPL",
+          "name": "AAPL",
+          "shares": 25,
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 320,
+          "priceTriggerBelow": 250
+        },
+        {
+          "ticker": "XME",
+          "name": "XME",
+          "shares": 27,
+          "targetWeight": 3,
+          "weightTriggerAbove": 9,
+          "priceTriggerAbove": 140,
+          "priceTriggerBelow": 105
+        },
+        {
+          "ticker": "TEM",
+          "name": "TEM",
+          "shares": 30,
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 60,
+          "priceTriggerBelow": 42
+        },
+        {
+          "ticker": "SHOP.TO",
+          "name": "SHOP",
+          "shares": 10,
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 165,
+          "priceTriggerBelow": 130
+        },
+        {
+          "ticker": "DTCR",
+          "name": "DTCR",
+          "shares": 212
+        },
+        {
+          "ticker": "CIF.TO",
+          "name": "CIF.TO",
+          "shares": 95
+        }
+      ],
+      "cash": 6940,
+      "currency": "CAD"
+    },
+    {
+      "name": "Non-registered",
+      "stocks": [
+        {
+          "ticker": "NA.TO",
+          "name": "NA.TO",
+          "shares": 70,
+          "targetWeight": 46,
+          "weightTriggerAbove": 20,
+          "priceTriggerAbove": 235,
+          "priceTriggerBelow": 185,
+          "weightTriggerBelow": 8
+        },
+        {
+          "ticker": "XDG.TO",
+          "name": "XDG.TO",
+          "shares": 90,
+          "targetWeight": 46,
+          "weightTriggerAbove": 20,
+          "weightTriggerBelow": 8,
+          "priceTriggerAbove": 36,
+          "priceTriggerBelow": 27
+        },
+        {
+          "ticker": "XUS.TO",
+          "name": "XUS.TO",
+          "shares": 70,
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 68,
+          "priceTriggerBelow": 55
+        },
+        {
+          "ticker": "SLI.V",
+          "name": "SLI.V",
+          "shares": 109,
+          "targetWeight": 0,
+          "weightTriggerAbove": 4,
+          "priceTriggerAbove": 7,
+          "priceTriggerBelow": 3.5
+        },
+        {
+          "ticker": "VE.to",
+          "shares": 100
+        },
+        {
+          "ticker": "Dram",
+          "name": "Dram",
+          "shares": 60
+        }
+      ],
+      "cash": 33000,
+      "currency": "CAD"
+    }
+  ],
+  "formatOptions": {
+    "showChangeIcons": true,
+    "showValue": true,
+    "showChange": true,
+    "showWeight": false,
+    "showPrice": true,
+    "showAllInCAD": false,
+    "showWarnings": false,
+    "showWatching": false,
+    "sortBy": "change"
+  },
+  "strategyGoals": "can you analyze this portfolio.  Considering the chaotic market from the war in Iran, and Oil Prices going up and down, I need to protect my investments. (YGOG.NE is Google, not a gold stock).  For ETF funds belong to the same categories, recommend the best one to hold for TFSA account, RRSP account and non-registered account. consider adding CIF, VYI, and VE if they are good fit for the portfolio. consider the AI infrastructure growth",
+  "strategyResult": {
+    "strategy": "Given elevated geopolitical risk (Iran conflict, oil price volatility), the portfolio is shifted toward defensive income, broad diversification, and reduced single-stock concentration. High-cash positions are deployed into quality income ETFs and diversified equity ETFs, while zero-target legacy holdings are trimmed or eliminated to simplify. Account-type optimization ensures tax-efficient placement: high-growth US equity in TFSA, income/dividends in registered accounts, and Canadian-focus in non-registered for dividend tax credit eligibility.",
+    "accounts": [
+      {
+        "accountName": "Registered-1",
+        "targets": [
+          {
+            "ticker": "ABBV",
+            "targetWeight": 4,
+            "rationale": "Defensive healthcare dividend payer — maintain target as ballast during geopolitical stress.",
+            "weightTriggerAbove": 9,
+            "weightTriggerBelow": 2,
+            "priceTriggerAbove": 235,
+            "priceTriggerBelow": 175
+          },
+          {
+            "ticker": "COST",
+            "targetWeight": 5,
+            "rationale": "Consumer staples-adjacent compounder with pricing power; maintain existing target.",
+            "weightTriggerAbove": 10,
+            "weightTriggerBelow": 3,
+            "priceTriggerAbove": 1150,
+            "priceTriggerBelow": 880
+          },
+          {
+            "ticker": "FMS",
+            "targetWeight": 0,
+            "rationale": "No strategic fit; eliminate to free capital for higher-conviction positions.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 24,
+            "priceTriggerBelow": 17
+          },
+          {
+            "ticker": "IVV",
+            "targetWeight": 0,
+            "rationale": "Redundant US broad market exposure alongside NVDA/MSFT/COST; eliminate per existing plan.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 820,
+            "priceTriggerBelow": 650
+          },
+          {
+            "ticker": "MDGL",
+            "targetWeight": 0,
+            "rationale": "Speculative single biotech with no target; eliminate to reduce risk during volatile markets.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 580,
+            "priceTriggerBelow": 420
+          },
+          {
+            "ticker": "MFC.TO",
+            "targetWeight": 0,
+            "rationale": "Canadian financials better held in non-registered for dividend tax credit; eliminate here per plan.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 62,
+            "priceTriggerBelow": 46
+          },
+          {
+            "ticker": "MSFT",
+            "targetWeight": 5,
+            "rationale": "Core quality tech holding; maintain target weight.",
+            "weightTriggerAbove": 10,
+            "weightTriggerBelow": 3,
+            "priceTriggerAbove": 460,
+            "priceTriggerBelow": 340
+          },
+          {
+            "ticker": "NVDA",
+            "targetWeight": 8,
+            "rationale": "Maintain existing target; AI infrastructure leader but trim if it drifts significantly above 8%.",
+            "weightTriggerAbove": 13,
+            "weightTriggerBelow": 5,
+            "priceTriggerAbove": 265,
+            "priceTriggerBelow": 185
+          },
+          {
+            "ticker": "QYLD",
+            "targetWeight": 4,
+            "rationale": "Covered-call Nasdaq income; reduce slightly from 6% target — QQQI and SPYI provide better risk-adjusted income coverage.",
+            "weightTriggerAbove": 9,
+            "weightTriggerBelow": 2,
+            "priceTriggerAbove": 21,
+            "priceTriggerBelow": 15.5
+          },
+          {
+            "ticker": "RY.TO",
+            "targetWeight": 0,
+            "rationale": "Royal Bank better held in non-registered for dividend tax credit; eliminate per existing plan.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 280,
+            "priceTriggerBelow": 210
+          },
+          {
+            "ticker": "SGOV",
+            "targetWeight": 12,
+            "rationale": "Reduce slightly from 14% target; reallocate to income ETFs while keeping meaningful short-term treasury buffer given geopolitical risk.",
+            "weightTriggerAbove": 17,
+            "weightTriggerBelow": 7,
+            "priceTriggerAbove": 101.5,
+            "priceTriggerBelow": 99.5
+          },
+          {
+            "ticker": "SHOP.TO",
+            "targetWeight": 0,
+            "rationale": "Small residual position with no target; eliminate — better concentrated in quality tech ETFs.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 155,
+            "priceTriggerBelow": 105
+          },
+          {
+            "ticker": "SOUN",
+            "targetWeight": 0,
+            "rationale": "Speculative micro-cap with no target; eliminate to reduce tail risk.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 12,
+            "priceTriggerBelow": 5.5
+          },
+          {
+            "ticker": "SPYI",
+            "targetWeight": 13,
+            "rationale": "Maintain at 13% target — S&P 500 covered-call income ETF provides defensiveness and yield during volatile markets.",
+            "weightTriggerAbove": 18,
+            "weightTriggerBelow": 8,
+            "priceTriggerAbove": 62,
+            "priceTriggerBelow": 46
+          },
+          {
+            "ticker": "XDIV.TO",
+            "targetWeight": 22,
+            "rationale": "Maintain 22% target — Canadian dividend equity core holding, tax-sheltered in registered account.",
+            "weightTriggerAbove": 27,
+            "weightTriggerBelow": 17,
+            "priceTriggerAbove": 48.5,
+            "priceTriggerBelow": 36
+          },
+          {
+            "ticker": "ZMMK.TO",
+            "targetWeight": 14,
+            "rationale": "Maintain 14% target — Canadian money market fund at current elevated weight should be reduced back toward target via deployment into SPYI/XDIV.",
+            "weightTriggerAbove": 19,
+            "weightTriggerBelow": 9,
+            "priceTriggerAbove": 52,
+            "priceTriggerBelow": 47.5
+          },
+          {
+            "ticker": "QQQI",
+            "targetWeight": 6,
+            "rationale": "Assign target — Nasdaq covered-call income ETF complements SPYI with tech-tilted yield; good fit for registered account.",
+            "weightTriggerAbove": 11,
+            "weightTriggerBelow": 4,
+            "priceTriggerAbove": 65,
+            "priceTriggerBelow": 48
+          }
+        ],
+        "cashTargetWeight": 7,
+        "notes": "Priority actions: sell FMS, IVV, MDGL, MFC.TO, RY.TO, SHOP.TO, SOUN (all zero-target positions) and deploy proceeds plus excess ZMMK.TO into XDIV.TO and SPYI to reach targets. QQQI is assigned a 6% formal target as it fits the income theme of this account. Cash buffer kept at 7% for opportunistic rebalancing."
+      },
+      {
+        "accountName": "Registered-2",
+        "targets": [
+          {
+            "ticker": "XSP.TO",
+            "targetWeight": 38,
+            "rationale": "Reduce slightly from 40% target — still the core US equity holding but modestly trimmed to fund XDIV increase; XSP.TO is the preferred US equity ETF here (hedged CAD, tax-efficient in registered).",
+            "weightTriggerAbove": 44,
+            "weightTriggerBelow": 32,
+            "priceTriggerAbove": 87,
+            "priceTriggerBelow": 63
+          },
+          {
+            "ticker": "XDIV.TO",
+            "targetWeight": 45,
+            "rationale": "Maintain 45% target — dominant Canadian dividend equity position appropriate for registered account.",
+            "weightTriggerAbove": 51,
+            "weightTriggerBelow": 39,
+            "priceTriggerAbove": 48.5,
+            "priceTriggerBelow": 36
+          },
+          {
+            "ticker": "IG1332",
+            "targetWeight": 0,
+            "rationale": "Maintain at zero — price unavailable and no strategic role; leave dormant.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 1,
+            "priceTriggerBelow": 0.5
+          },
+          {
+            "ticker": "XEU.TO",
+            "targetWeight": 10,
+            "rationale": "Maintain 10% target — European equity diversification provides non-USD, non-CAD exposure which is valuable during US/Iran geopolitical stress.",
+            "weightTriggerAbove": 15,
+            "weightTriggerBelow": 5,
+            "priceTriggerAbove": 46,
+            "priceTriggerBelow": 33
+          }
+        ],
+        "cashTargetWeight": 7,
+        "notes": "XSP.TO is the preferred US equity ETF for this registered account over IVV/VOO (no withholding tax drag in RRSP-type accounts, CAD-hedged reduces FX risk). Sell down excess XSP.TO to fund XDIV.TO toward its 45% target. XEU.TO provides useful diversification away from North American markets during current geopolitical uncertainty — retain at 10%."
+      },
+      {
+        "accountName": "Registered-3",
+        "targets": [
+          {
+            "ticker": "XDIV.TO",
+            "targetWeight": 24,
+            "rationale": "Reduce dramatically from 50% target — with XEQT.TO already at 38%, a 50% XDIV target creates excessive Canadian dividend concentration; 24% alongside XEQT is better balanced.",
+            "weightTriggerAbove": 30,
+            "weightTriggerBelow": 18,
+            "priceTriggerAbove": 48.5,
+            "priceTriggerBelow": 36
+          },
+          {
+            "ticker": "XEQT.TO",
+            "targetWeight": 68,
+            "rationale": "Assign target — XEQT.TO is an all-in-one global equity ETF and the ideal single core holding for a small registered account; prioritize deploying large cash balance here.",
+            "weightTriggerAbove": 74,
+            "weightTriggerBelow": 62,
+            "priceTriggerAbove": 50.5,
+            "priceTriggerBelow": 37.5
+          }
+        ],
+        "cashTargetWeight": 8,
+        "notes": "This small account (C$23K) is best served by simplicity: XEQT.TO as the dominant all-in-one global equity core with XDIV.TO for Canadian dividend tilt. The 41.8% cash position should be deployed primarily into XEQT.TO. The original 50% XDIV target is too concentrated given XEQT already holds Canadian equities — revised to 24% XDIV / 68% XEQT / 8% cash."
+      },
+      {
+        "accountName": "Registered-4",
+        "targets": [
+          {
+            "ticker": "ZAG.TO",
+            "targetWeight": 10,
+            "rationale": "Maintain 10% target — Canadian aggregate bond ETF provides fixed income ballast; current 19% weight needs trimming.",
+            "weightTriggerAbove": 15,
+            "weightTriggerBelow": 5,
+            "priceTriggerAbove": 16,
+            "priceTriggerBelow": 12
+          },
+          {
+            "ticker": "XEF.TO",
+            "targetWeight": 10,
+            "rationale": "Maintain 10% target — international developed market equity diversification, valuable during US/Iran tensions.",
+            "weightTriggerAbove": 15,
+            "weightTriggerBelow": 5,
+            "priceTriggerAbove": 58,
+            "priceTriggerBelow": 42.5
+          },
+          {
+            "ticker": "CASH.TO",
+            "targetWeight": 10,
+            "rationale": "Reduce from 15% target — deploy excess cash-equivalent into PHYS and XEQT.TO toward their targets.",
+            "weightTriggerAbove": 15,
+            "weightTriggerBelow": 5,
+            "priceTriggerAbove": 51.5,
+            "priceTriggerBelow": 48.5
+          },
+          {
+            "ticker": "YGOG.NE",
+            "targetWeight": 5,
+            "rationale": "Maintain 5% target — Google (Alphabet) exposure via YGOG.NE; current 9.9% is above target, trim back.",
+            "weightTriggerAbove": 10,
+            "weightTriggerBelow": 3,
+            "priceTriggerAbove": 78,
+            "priceTriggerBelow": 55
+          },
+          {
+            "ticker": "PHYS",
+            "targetWeight": 25,
+            "rationale": "Maintain 25% target — physical gold is a critical safe-haven given Iran war risk and oil price volatility; current 3.4% is far below target, deploy aggressively.",
+            "weightTriggerAbove": 31,
+            "weightTriggerBelow": 19,
+            "priceTriggerAbove": 42,
+            "priceTriggerBelow": 29
+          },
+          {
+            "ticker": "XEQT.TO",
+            "targetWeight": 22,
+            "rationale": "Increase from 20% target — deploy proceeds from VOO/AAPL/TMDX/TEM eliminations into this all-in-one global ETF; avoids redundancy and simplifies.",
+            "weightTriggerAbove": 27,
+            "weightTriggerBelow": 17,
+            "priceTriggerAbove": 50.5,
+            "priceTriggerBelow": 37.5
+          },
+          {
+            "ticker": "VOO",
+            "targetWeight": 0,
+            "rationale": "Eliminate per existing plan — redundant US large cap exposure alongside XEQT.TO and YGOG.NE.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 750,
+            "priceTriggerBelow": 600
+          },
+          {
+            "ticker": "AAPL",
+            "targetWeight": 0,
+            "rationale": "Eliminate per existing plan — single stock risk; Apple already held via XEQT.TO and YGOG.NE broadly.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 340,
+            "priceTriggerBelow": 250
+          },
+          {
+            "ticker": "XME",
+            "targetWeight": 3,
+            "rationale": "Maintain small 3% target — metals/mining ETF provides commodity inflation hedge relevant given oil/geopolitical volatility.",
+            "weightTriggerAbove": 8,
+            "priceTriggerAbove": 145,
+            "priceTriggerBelow": 100
+          },
+          {
+            "ticker": "TMDX",
+            "targetWeight": 0,
+            "rationale": "Eliminate per existing plan — speculative single biotech with no target; too small to be meaningful.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 75,
+            "priceTriggerBelow": 48
+          },
+          {
+            "ticker": "TEM",
+            "targetWeight": 0,
+            "rationale": "Eliminate per existing plan — speculative small-cap with no target; redeploy into PHYS or XEQT.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 55,
+            "priceTriggerBelow": 35
+          },
+          {
+            "ticker": "SHOP.TO",
+            "targetWeight": 0,
+            "rationale": "Eliminate per existing plan — small residual position; consolidate proceeds into XEQT.TO.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 155,
+            "priceTriggerBelow": 105
+          },
+          {
+            "ticker": "QYLD",
+            "targetWeight": 6,
+            "rationale": "Assign 6% target — covered-call income ETF adds yield to this account; consistent with the income theme across registered accounts.",
+            "weightTriggerAbove": 11,
+            "weightTriggerBelow": 4,
+            "priceTriggerAbove": 21,
+            "priceTriggerBelow": 15.5
+          }
+        ],
+        "cashTargetWeight": 9,
+        "notes": "Priority: sell VOO, AAPL, TMDX, TEM, SHOP.TO and trim ZAG.TO and YGOG.NE back to targets; use all proceeds plus existing cash to aggressively build PHYS toward 25% target (highest priority given geopolitical context) and XEQT.TO toward 22%. QYLD assigned 6% formal target — already held at 6.3%. CIF (CI Financial) not recommended here as it is a financial sector stock adding concentration risk. VYI and VE considered below in notes."
+      },
+      {
+        "accountName": "Non-registered",
+        "targets": [
+          {
+            "ticker": "NA.TO",
+            "targetWeight": 33,
+            "rationale": "Maintain ~33% target — National Bank is an excellent Canadian dividend stock for non-registered accounts due to eligible dividend tax credit; slightly rounded from 33.5%.",
+            "weightTriggerAbove": 39,
+            "weightTriggerBelow": 27,
+            "priceTriggerAbove": 240,
+            "priceTriggerBelow": 170
+          },
+          {
+            "ticker": "XDG.TO",
+            "targetWeight": 33,
+            "rationale": "Maintain ~33% target — global dividend ETF provides international diversification and income in a tax-efficient non-registered wrapper; slightly rounded from 33.5%.",
+            "weightTriggerAbove": 39,
+            "weightTriggerBelow": 27,
+            "priceTriggerAbove": 37,
+            "priceTriggerBelow": 26
+          },
+          {
+            "ticker": "XUS.TO",
+            "targetWeight": 0,
+            "rationale": "Eliminate per existing plan — US equity better held in registered accounts; non-registered should focus on Canadian dividend income for tax efficiency.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 72,
+            "priceTriggerBelow": 53
+          },
+          {
+            "ticker": "SLI.V",
+            "targetWeight": 0,
+            "rationale": "Eliminate per existing plan — speculative junior mining stock with negligible weight; not a fit for the defensive income strategy.",
+            "weightTriggerAbove": 4,
+            "priceTriggerAbove": 8,
+            "priceTriggerBelow": 3.5
+          },
+          {
+            "ticker": "ZAG.TO",
+            "targetWeight": 25,
+            "rationale": "Maintain 25% target — Canadian bond ETF provides fixed income stability; note this duplicates ZAG.TO held in Registered-4 but accounts must be managed independently.",
+            "weightTriggerAbove": 31,
+            "weightTriggerBelow": 19,
+            "priceTriggerAbove": 16,
+            "priceTriggerBelow": 12
+          },
+          {
+            "ticker": "VYI",
+            "targetWeight": 5,
+            "rationale": "Add VYI (iShares Core Canadian Short Term Bond) — provides short-duration Canadian fixed income as a complement to ZAG.TO, reducing interest rate sensitivity in this account given rate uncertainty.",
+            "weightTriggerAbove": 10,
+            "weightTriggerBelow": 3,
+            "priceTriggerAbove": 24,
+            "priceTriggerBelow": 19,
+            "new": true
+          }
+        ],
+        "cashTargetWeight": 4,
+        "notes": "The 54.7% cash position is the most urgent issue in this account — deploy aggressively into NA.TO (to ~33% target) and XDG.TO (to ~33% target). Sell XUS.TO and SLI.V. VYI added at 5% as a short-duration bond complement to ZAG.TO. VE (Vanguard FTSE Developed Europe ETF) was considered but XDG.TO already provides global developed-market dividend exposure making VE redundant here — not recommended. CIF (CI Financial preferred shares or stock): not recommended as it adds financial sector concentration alongside NA.TO. The non-registered account is well-structured once cash is deployed: NA.TO (Canadian dividends, tax-credited), XDG.TO (global dividend income), ZAG.TO (bonds), VYI (short bonds) = defensive income portfolio appropriate for current geopolitical environment."
+      }
+    ],
+    "notes": "OVERALL PORTFOLIO ASSESSMENT: The portfolio spans C$666K across 5 accounts with strong structural bones but execution gaps — most accounts have significant drift from targets, particularly Registered-4 (PHYS at 3.4% vs 25% target) and Non-registered (54.7% cash). KEY GEOPOLITICAL RESPONSE: Iran war risk and oil volatility favor (1) PHYS gold in Registered-4 as primary hedge — build aggressively to 25%; (2) XME for commodity inflation exposure; (3) XDIV.TO for defensive Canadian dividend income; (4) SGOV/ZMMK.TO as short-term cash equivalents. TAX EFFICIENCY OPTIMIZATION: Canadian dividend stocks (NA.TO, XDIV.TO, MFC.TO, RY.TO) are best in non-registered for the dividend tax credit — currently MFC.TO and RY.TO are in Registered-1 which is suboptimal but cannot be transferred; eliminate them there and hold Canadian dividend exposure via XDIV.TO instead. US equities (NVDA, MSFT, ABBV, COST) are correctly sheltered in registered accounts. ETF CATEGORY WINNERS BY ACCOUNT: US Equity — XSP.TO (Registered-2, hedged), XEQT.TO (Registered-3/4, all-in-one); Canadian Dividend — XDIV.TO (all registered); Income/Covered Call — SPYI + QQQI (Registered-1); Bonds — ZAG.TO (Registered-4 + Non-reg); Gold — PHYS (Registered-4). VE (Europe ETF) is not recommended as XEU.TO and XEF.TO already cover international developed markets adequately. CIF (CI Financial) is not recommended due to financial sector concentration risk alongside existing bank holdings."
+  }
+}

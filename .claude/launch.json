@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "portfolio-tracker",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["tsx", "server.js"],
+      "port": 3001,
+      "autoPort": true
+    }
+  ]
+}

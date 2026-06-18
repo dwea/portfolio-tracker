@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker - Schedules</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 8px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 10px 12px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+            margin-bottom: 8px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 0;
+        }
+
+        .header p {
+            display: none;
+        }
+
+        .nav-links {
+            margin-top: 6px;
+        }
+
+        .nav-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+
+        .section {
+            background: white;
+            padding: 10px 12px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+            margin-bottom: 8px;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 5px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 12px;
+        }
+
+        td {
+            padding: 5px 8px;
+            border-bottom: 1px solid #dee2e6;
+            color: #666;
+            font-size: 12px;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status.enabled {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.disabled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.running {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .btn {
+            padding: 4px 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .btn-small {
+            padding: 3px 8px;
+            font-size: 11px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .refresh-btn {
+            float: right;
+        }
+
+        .today-widget {
+            background: #fff;
+            color: #111;
+            padding: 8px 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            border: 2px solid #2563eb;
+        }
+
+        .today-widget h3 {
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #111;
+        }
+
+        .today-item {
+            background: #f0f4ff;
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #d0d9f0;
+        }
+
+        .today-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .today-time {
+            font-weight: 600;
+            font-size: 12px;
+            color: #111;
+        }
+
+        .today-report {
+            font-size: 12px;
+            color: #444;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Portfolio Tracker Schedules</h1>
+            <p>Manage and monitor your automated portfolio reports</p>
+            <div class="nav-links">
+                <a href="/">← Back to Editor</a>
+                <a href="#" onclick="location.reload()">🔄 Refresh</a>
+            </div>
+        </div>
+
+        <div class="today-widget" id="todayWidget">
+            <h3>📅 Today's Scheduled Reports</h3>
+            <div id="todayContent" class="loading">Loading...</div>
+        </div>
+
+        <div class="section">
+            <h2>All Scheduled Reports</h2>
+            <div id="schedulesContent" class="loading">Loading schedules...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadSchedules() {
+            try {
+                const response = await fetch('/api/schedules');
+                const schedules = await response.json();
+
+                const container = document.getElementById('schedulesContent');
+
+                if (schedules.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📅</div>
+                            <p>No schedules configured yet.</p>
+                            <p style="margin-top: 8px;">Create a report with a schedule in the editor.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Report Name</th>
+                            <th>Schedule</th>
+                            <th>Format</th>
+                            <th>Next Run</th>
+                            <th>Last Run</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${schedules.map(schedule => `
+                            <tr>
+                                <td><strong>${schedule.reportName}</strong></td>
+                                <td>${schedule.schedule}</td>
+                                <td>${schedule.format}</td>
+                                <td>${schedule.nextRun}</td>
+                                <td>
+                                    ${schedule.lastRun
+                                        ? `<span class="timestamp">${formatTimestamp(schedule.lastRun)}</span>`
+                                        : '<span style="color: #999;">Never</span>'
+                                    }
+                                </td>
+                                <td>
+                                    ${schedule.lastStatus
+                                        ? `<span class="status ${schedule.lastStatus}">${schedule.lastStatus}</span>`
+                                        : '-'
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-small" onclick="runReportNow('${schedule.reportName}', '${schedule.format}')">
+                                        ▶️ Run Now
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+
+                const wrapper = document.createElement('div');
+                wrapper.style.overflowX = 'auto';
+                wrapper.appendChild(table);
+                container.innerHTML = '';
+                container.appendChild(wrapper);
+
+                // Update today's widget
+                updateTodayWidget(schedules);
+
+            } catch (error) {
+                document.getElementById('schedulesContent').innerHTML = `
+                    <div class="empty-state">
+                        <p style="color: #dc3545;">Error loading schedules: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateTodayWidget(schedules) {
+            const todayContent = document.getElementById('todayContent');
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+            // Filter schedules that run today
+            const todaySchedules = schedules.filter(schedule => {
+                const cron = schedule.cronExpression;
+                const parts = cron.split(' ');
+                const dayPart = parts[4]; // Day of week in cron
+
+                // Check if today is included
+                if (dayPart === '*') return true; // Runs every day
+
+                // Check for specific days
+                const days = dayPart.split(',').map(d => {
+                    if (d.includes('-')) {
+                        const [start, end] = d.split('-').map(Number);
+                        const currentDay = dayOfWeek === 0 ? 7 : dayOfWeek; // Convert Sunday from 0 to 7
+                        return currentDay >= start && currentDay <= end;
+                    }
+                    return parseInt(d) === (dayOfWeek === 0 ? 7 : dayOfWeek);
+                });
+
+                return days.some(Boolean);
+            });
+
+            if (todaySchedules.length === 0) {
+                todayContent.className = '';
+                todayContent.innerHTML = '<p style="opacity: 0.8;">No reports scheduled for today</p>';
+                return;
+            }
+
+            // Sort by time
+            const sortedSchedules = todaySchedules.sort((a, b) => {
+                const timeA = a.cronExpression.split(' ');
+                const timeB = b.cronExpression.split(' ');
+                const hourA = parseInt(timeA[1]) || 0;
+                const hourB = parseInt(timeB[1]) || 0;
+                const minA = parseInt(timeA[0]) || 0;
+                const minB = parseInt(timeB[0]) || 0;
+                return (hourA * 60 + minA) - (hourB * 60 + minB);
+            });
+
+            todayContent.className = '';
+            todayContent.innerHTML = sortedSchedules.map(schedule => {
+                const time = extractTime(schedule.cronExpression);
+                return `
+                    <div class="today-item">
+                        <div>
+                            <div class="today-time">${time}</div>
+                            <div class="today-report">${schedule.reportName} (${schedule.format})</div>
+                        </div>
+                        <span class="status ${schedule.enabled ? 'enabled' : 'disabled'}">
+                            ${schedule.enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function extractTime(cronExpression) {
+            const parts = cronExpression.split(' ');
+            const minute = parts[0];
+            const hour = parseInt(parts[1]);
+
+            const period = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+
+            return `${displayHour}:${minute.padStart(2, '0')} ${period}`;
+        }
+
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        async function runReportNow(reportName, format) {
+            // Find the filename for this report
+            try {
+                const response = await fetch('/api/reports');
+                const reports = await response.json();
+                const report = reports.find(r => r.reportName === reportName);
+
+                if (!report) {
+                    alert('Report not found');
+                    return;
+                }
+
+                const runResponse = await fetch(`/api/reports/${report.filename}/run`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ format })
+                });
+
+                const result = await runResponse.json();
+
+                if (result.success) {
+                    alert(`Report "${reportName}" is running. SMS will be sent when complete.`);
+                    // Reload schedules after a delay to show updated status
+                    setTimeout(loadSchedules, 2000);
+                } else {
+                    alert('Error running report: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Load schedules on page load
+        loadSchedules();
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadSchedules, 30000);
+    </script>
+</body>
+</html>

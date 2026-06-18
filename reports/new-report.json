@@ -1,0 +1,81 @@
+{
+  "reportName": "New_report",
+  "schedules": [
+    {
+      "when": "weekdays-at-9",
+      "format": "detailed"
+    },
+    {
+      "when": "weekdays-at-14",
+      "format": "detailed"
+    }
+  ],
+  "alertRecipients": [
+    "Sukisuki"
+  ],
+  "accounts": [
+    {
+      "name": "CAD Margin",
+      "stocks": [
+        {
+          "ticker": "TD.TO",
+          "shares": 250
+        },
+        {
+          "ticker": "CNR.TO",
+          "shares": 100
+        },
+        {
+          "ticker": "WPM",
+          "name": "WPM",
+          "shares": 50
+        },
+        {
+          "ticker": "VDY.TO",
+          "shares": 1100
+        },
+        {
+          "ticker": "RGLD",
+          "name": "RGLD",
+          "shares": 25
+        },
+        {
+          "ticker": "BNS",
+          "name": "BNS",
+          "shares": 100
+        },
+        {
+          "ticker": "XSP.TO",
+          "shares": 600
+        },
+        {
+          "ticker": "ENB",
+          "name": "ENB",
+          "shares": 100
+        },
+        {
+          "ticker": "XEU.TO",
+          "shares": 400
+        },
+        {
+          "ticker": "FMS.V",
+          "shares": 8000
+        }
+      ],
+      "cash": -115.86,
+      "currency": "CAD"
+    }
+  ],
+  "formatOptions": {
+    "showChangeIcons": true,
+    "showValue": true,
+    "showChange": true,
+    "showWeight": true,
+    "showPrice": false,
+    "showAllInCAD": true,
+    "showWarnings": false,
+    "showWatching": false,
+    "showTickerSuffix": false,
+    "sortBy": "change"
+  }
+}
