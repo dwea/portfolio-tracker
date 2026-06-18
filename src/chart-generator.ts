@@ -226,9 +226,7 @@ function generateChartSVG(
   });
 
   // Add "Total" label at the end of account total line
-  const escapedAccountName = escapeXml(accountName);
-  svg += `<text x="${accountLastX + 12}" y="${accountLastY + 6}" font-size="18" font-weight="bold" fill="#1a1a1a">Total</text>`;
-  svg += `<text x="${accountLastX + 12}" y="${accountLastY + 20}" font-size="12" fill="#666">${escapedAccountName}</text>`;
+  svg += `<text x="${accountLastX + 12}" y="${accountLastY + 6}" font-size="11" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="#1a1a1a">Total</text>`;
 
   // X-axis
   svg += `<line x1="${marginLeft}" y1="${marginTop + chartHeight}" x2="${width - marginRight}" y2="${marginTop + chartHeight}" stroke="#333" stroke-width="1"/>`;
