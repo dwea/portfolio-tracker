@@ -175,8 +175,8 @@ function generateChartSVG(
   }
 
   const labelPositions: LabelPosition[] = [];
-  const labelHeight = 22;
-  const labelWidth = 35; // Approximate width for ticker names
+  const labelHeight = 13;
+  const labelWidth = 28; // Approximate width for ticker names
 
   // First pass: try to place labels at endpoint
   tickers.forEach((ticker) => {
@@ -187,7 +187,7 @@ function generateChartSVG(
         endX: endPoint.x,
         endY: endPoint.y,
         labelX: endPoint.x + 12,
-        labelY: endPoint.y + 6,
+        labelY: endPoint.y + 4,
         width: labelWidth,
         height: labelHeight,
       });
@@ -203,10 +203,10 @@ function generateChartSVG(
       const labelA = labelPositions[i];
       const labelB = labelPositions[j];
 
-      // Check vertical overlap
-      if (labelA.labelY + labelA.height > labelB.labelY - 4) {
-        // Move B down to avoid A
-        const newY = labelA.labelY + labelA.height + 4;
+      // Check vertical overlap with minimal padding
+      if (labelA.labelY + labelA.height > labelB.labelY - 1) {
+        // Move B down to avoid A with 1px padding
+        const newY = labelA.labelY + labelA.height + 1;
         labelB.labelY = newY;
       }
     }
@@ -215,14 +215,14 @@ function generateChartSVG(
   // Render labels with connector lines if moved significantly
   labelPositions.forEach((label) => {
     const escapedTicker = escapeXml(label.ticker);
-    const movedDistance = Math.abs(label.labelY - (label.endY + 6));
+    const movedDistance = Math.abs(label.labelY - (label.endY + 4));
 
-    // Draw connector line if label moved more than 8 pixels
-    if (movedDistance > 8) {
-      svg += `<line x1="${label.endX + 12}" y1="${label.endY}" x2="${label.labelX}" y2="${label.labelY - 8}" stroke="${holdingColors[label.ticker]}" stroke-width="0.5" opacity="0.3"/>`;
+    // Draw connector line if label moved more than 6 pixels
+    if (movedDistance > 6) {
+      svg += `<line x1="${label.endX + 12}" y1="${label.endY}" x2="${label.labelX}" y2="${label.labelY - 5}" stroke="${holdingColors[label.ticker]}" stroke-width="0.5" opacity="0.3"/>`;
     }
 
-    svg += `<text x="${label.labelX}" y="${label.labelY}" font-size="18" font-weight="bold" fill="${holdingColors[label.ticker]}" opacity="0.85">${escapedTicker}</text>`;
+    svg += `<text x="${label.labelX}" y="${label.labelY}" font-size="11" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="${holdingColors[label.ticker]}" opacity="0.85">${escapedTicker}</text>`;
   });
 
   // Add "Total" label at the end of account total line
