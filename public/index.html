@@ -236,11 +236,19 @@
       const debounceRef = React.useRef(null);
 
       useEffect(() => {
+        let isMounted = true;
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
+        const timeout = setTimeout(() => {
+          console.warn('[App] Reports fetch timed out after 5s');
+          controller.abort();
+          if (isMounted) {
+            setReportsError('Reports server is not responding (timeout after 5s). Try refreshing.');
+          }
+        }, 5000);
 
         fetch('/api/reports', { signal: controller.signal })
           .then(r => {
+            clearTimeout(timeout);
             if (!r.ok) {
               if (r.status === 401) {
                 console.warn('[App] Session expired, redirecting to login');
@@ -252,21 +260,25 @@
             return r.json();
           })
           .then(data => {
-            if (Array.isArray(data)) setSavedReports(data.map(d => d.filename || d));
+            if (isMounted) {
+              if (Array.isArray(data)) {
+                setSavedReports(data.map(d => d.filename || d));
+              }
+            }
           })
           .catch(err => {
-            let msg = 'Failed to load reports';
-            if (err.name === 'AbortError') {
-              console.warn('[App] Reports fetch timed out after 5s');
-              msg = 'Reports server is not responding (timeout after 5s). Try refreshing.';
-            } else {
+            clearTimeout(timeout);
+            if (isMounted && err.name !== 'AbortError') {
+              let msg = `Failed to load reports: ${err.message}`;
               console.warn('[App] Failed to load reports:', err.message);
-              msg = `Failed to load reports: ${err.message}`;
+              setReportsError(msg);
             }
-            setReportsError(msg);
           });
 
-        return () => clearTimeout(timeout);
+        return () => {
+          isMounted = false;
+          clearTimeout(timeout);
+        };
       }, []);
 
       // Auto-recalculate rebalance whenever accounts change (debounced)
