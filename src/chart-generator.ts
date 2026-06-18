@@ -163,15 +163,66 @@ function generateChartSVG(
   });
   svg += `<polyline points="${accountPoints.join(' ')}" fill="none" stroke="#1a1a1a" stroke-width="2.5"/>`;
 
-  // Add ticker labels at the end of each line (large font for mobile readability)
+  // Smart ticker label positioning to avoid overlaps
+  interface LabelPosition {
+    ticker: string;
+    endX: number;
+    endY: number;
+    labelX: number;
+    labelY: number;
+    width: number;
+    height: number;
+  }
+
+  const labelPositions: LabelPosition[] = [];
+  const labelHeight = 22;
+  const labelWidth = 35; // Approximate width for ticker names
+
+  // First pass: try to place labels at endpoint
   tickers.forEach((ticker) => {
     const endPoint = tickerEndPoints[ticker];
     if (endPoint) {
-      const labelX = endPoint.x + 12;
-      const labelY = endPoint.y + 6;
-      const escapedTicker = escapeXml(ticker);
-      svg += `<text x="${labelX}" y="${labelY}" font-size="18" font-weight="bold" fill="${holdingColors[ticker]}" opacity="0.85">${escapedTicker}</text>`;
+      labelPositions.push({
+        ticker,
+        endX: endPoint.x,
+        endY: endPoint.y,
+        labelX: endPoint.x + 12,
+        labelY: endPoint.y + 6,
+        width: labelWidth,
+        height: labelHeight,
+      });
     }
+  });
+
+  // Sort by Y position for collision resolution
+  labelPositions.sort((a, b) => a.labelY - b.labelY);
+
+  // Second pass: resolve overlaps using vertical stacking
+  for (let i = 0; i < labelPositions.length; i++) {
+    for (let j = i + 1; j < labelPositions.length; j++) {
+      const labelA = labelPositions[i];
+      const labelB = labelPositions[j];
+
+      // Check vertical overlap
+      if (labelA.labelY + labelA.height > labelB.labelY - 4) {
+        // Move B down to avoid A
+        const newY = labelA.labelY + labelA.height + 4;
+        labelB.labelY = newY;
+      }
+    }
+  }
+
+  // Render labels with connector lines if moved significantly
+  labelPositions.forEach((label) => {
+    const escapedTicker = escapeXml(label.ticker);
+    const movedDistance = Math.abs(label.labelY - (label.endY + 6));
+
+    // Draw connector line if label moved more than 8 pixels
+    if (movedDistance > 8) {
+      svg += `<line x1="${label.endX + 12}" y1="${label.endY}" x2="${label.labelX}" y2="${label.labelY - 8}" stroke="${holdingColors[label.ticker]}" stroke-width="0.5" opacity="0.3"/>`;
+    }
+
+    svg += `<text x="${label.labelX}" y="${label.labelY}" font-size="18" font-weight="bold" fill="${holdingColors[label.ticker]}" opacity="0.85">${escapedTicker}</text>`;
   });
 
   // Add "Total" label at the end of account total line
@@ -182,11 +233,12 @@ function generateChartSVG(
   // X-axis
   svg += `<line x1="${marginLeft}" y1="${marginTop + chartHeight}" x2="${width - marginRight}" y2="${marginTop + chartHeight}" stroke="#333" stroke-width="1"/>`;
 
-  // X-axis labels (dates)
+  // X-axis labels (dates without year)
   for (let i = 0; i < dataPoints.length; i += Math.max(1, Math.floor(dataPoints.length / 6))) {
     const point = dataPoints[i];
     const x = indexToX(i);
-    svg += `<text x="${x}" y="${marginTop + chartHeight + 20}" text-anchor="middle" font-size="11" fill="#666">${point.date}</text>`;
+    const dateWithoutYear = point.date.substring(5); // Remove YYYY- prefix
+    svg += `<text x="${x}" y="${marginTop + chartHeight + 20}" text-anchor="middle" font-size="11" fill="#666">${dateWithoutYear}</text>`;
   }
 
   // Y-axis
