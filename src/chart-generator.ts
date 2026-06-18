@@ -154,12 +154,14 @@ function generateChartSVG(
   const accountPoints: string[] = [];
   let accountLastX = 0;
   let accountLastY = 0;
+  let accountLastPercent = 0;
   percentChangePoints.forEach((point, idx) => {
     const x = indexToX(idx);
     const y = percentToY(point.accountTotalPercent);
     accountPoints.push(`${x},${y}`);
     accountLastX = x;
     accountLastY = y;
+    accountLastPercent = point.accountTotalPercent;
   });
   svg += `<polyline points="${accountPoints.join(' ')}" fill="none" stroke="#1a1a1a" stroke-width="2.5"/>`;
 
@@ -225,8 +227,10 @@ function generateChartSVG(
     svg += `<text x="${label.labelX}" y="${label.labelY}" font-size="11" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="${holdingColors[label.ticker]}" opacity="0.85">${escapedTicker}</text>`;
   });
 
-  // Add "Total" label at the end of account total line
+  // Add "Total" label with percentage change at the end of account total line
+  const totalChangeColor = accountLastPercent >= 0 ? '#1a1a1a' : '#dc2626';
   svg += `<text x="${accountLastX + 12}" y="${accountLastY + 6}" font-size="11" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="#1a1a1a">Total</text>`;
+  svg += `<text x="${accountLastX + 12}" y="${accountLastY + 18}" font-size="10" font-family="Arial, Helvetica, sans-serif" fill="${totalChangeColor}">${accountLastPercent.toFixed(1)}%</text>`;
 
   // X-axis
   svg += `<line x1="${marginLeft}" y1="${marginTop + chartHeight}" x2="${width - marginRight}" y2="${marginTop + chartHeight}" stroke="#333" stroke-width="1"/>`;
