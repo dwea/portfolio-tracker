@@ -1824,69 +1824,32 @@
       if (tab === 'schedules') loadSchedules();
     }
 
-    async function loadSchedules() {
-      try {
-        const response = await fetch('/api/schedules');
-        const schedules = await response.json();
-
-        const container = document.getElementById('schedulesContent');
-
-        if (schedules.length === 0) {
-          container.innerHTML = `
-            <div class="sched-empty">
-              <div style="font-size: 48px; margin-bottom: 16px;">📅</div>
-              <p>No schedules configured yet.</p>
-              <p style="margin-top: 8px;">Create a report with a schedule in the editor.</p>
-            </div>
-          `;
-          return;
-        }
-
-        // Group by report name, sort slots within each group by hour
-        const grouped = {};
-        for (const s of schedules) {
-          if (!grouped[s.reportName]) grouped[s.reportName] = [];
-          grouped[s.reportName].push(s);
-        }
-        for (const slots of Object.values(grouped)) {
-          slots.sort((a, b) => {
-            const hourA = parseInt(a.cronExpression.split(' ')[1]) || 0;
-            const hourB = parseInt(b.cronExpression.split(' ')[1]) || 0;
-            return hourA - hourB;
-          });
-        }
-
-        container.innerHTML = Object.entries(grouped).map(([reportName, slots]) => `
-          <div class="sched-report-card">
-            <div class="sched-report-name">${reportName}</div>
-            <div class="sched-table-wrap"><table>
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Format</th>
-                  <th>Last</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${slots.map(slot => `
-                  <tr>
-                    <td>${slot.schedule}</td>
-                    <td>${slot.format}</td>
-                    <td>${formatLastRun(slot.lastRun)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table></div>
-          </div>
-        `).join('');
-
-      } catch (error) {
-        document.getElementById('schedulesContent').innerHTML = `
-          <div class="sched-empty">
-            <p style="color: #dc3545;">Error loading schedules: ${error.message}</p>
-          </div>
-        `;
-      }
+    function loadSchedules() {
+      fetch('/api/schedules')
+        .then(response => response.json())
+        .then(schedules => {
+          const container = document.getElementById('schedulesContent');
+          if (schedules.length === 0) {
+            container.innerHTML = `<div class="sched-empty"><div style="font-size: 48px; margin-bottom: 16px;">📅</div><p>No schedules configured yet.</p><p style="margin-top: 8px;">Create a report with a schedule in the editor.</p></div>`;
+            return;
+          }
+          const grouped = {};
+          for (const s of schedules) {
+            if (!grouped[s.reportName]) grouped[s.reportName] = [];
+            grouped[s.reportName].push(s);
+          }
+          for (const slots of Object.values(grouped)) {
+            slots.sort((a, b) => {
+              const hourA = parseInt(a.cronExpression.split(' ')[1]) || 0;
+              const hourB = parseInt(b.cronExpression.split(' ')[1]) || 0;
+              return hourA - hourB;
+            });
+          }
+          container.innerHTML = Object.entries(grouped).map(([reportName, slots]) => `<div class="sched-report-card"><div class="sched-report-name">${reportName}</div><div class="sched-table-wrap"><table><thead><tr><th>Time</th><th>Format</th><th>Last</th></tr></thead><tbody>${slots.map(slot => `<tr><td>${slot.schedule}</td><td>${slot.format}</td><td>${formatLastRun(slot.lastRun)}</td></tr>`).join('')}</tbody></table></div></div>`).join('');
+        })
+        .catch(error => {
+          document.getElementById('schedulesContent').innerHTML = `<div class="sched-empty"><p style="color: #dc3545;">Error loading schedules: ${error.message}</p></div>`;
+        });
     }
 
 function formatLastRun(lastRun) {
@@ -1908,34 +1871,28 @@ function formatLastRun(lastRun) {
       return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
     }
 
-    async function runReportNow(reportName, format) {
-      try {
-        const response = await fetch('/api/reports');
-        const reports = await response.json();
-        const report = reports.find(r => r.reportName === reportName);
-
-        if (!report) {
-          alert('Report not found');
-          return;
-        }
-
-        const runResponse = await fetch(`/api/reports/${report.filename}/run`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ format })
+    function runReportNow(reportName, format) {
+      fetch('/api/reports')
+        .then(response => response.json())
+        .then(reports => {
+          const report = reports.find(r => r.reportName === reportName);
+          if (!report) { alert('Report not found'); return; }
+          return fetch('/api/reports/' + report.filename + '/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ format: format })
+          }).then(r => r.json()).then(result => {
+            if (result.success) {
+              alert('Report "' + reportName + '" is running. SMS will be sent when complete.');
+              setTimeout(loadSchedules, 2000);
+            } else {
+              alert('Error running report: ' + (result.error || 'Unknown error'));
+            }
+          });
+        })
+        .catch(error => {
+          alert('Error: ' + error.message);
         });
-
-        const result = await runResponse.json();
-
-        if (result.success) {
-          alert(`Report "${reportName}" is running. SMS will be sent when complete.`);
-          setTimeout(loadSchedules, 2000);
-        } else {
-          alert('Error running report: ' + (result.error || 'Unknown error'));
-        }
-      } catch (error) {
-        alert('Error: ' + error.message);
-      }
     }
 
     // Auto-refresh schedules every 30 seconds, only when tab is visible
