@@ -213,6 +213,7 @@
       const [chartsFile, setChartsFile] = useState(null); // filename currently showing charts
       const [chartsLoading, setChartsLoading] = useState(false);
       const [chartImages, setChartImages] = useState([]); // array of {name, url}
+      const [fullscreenChart, setFullscreenChart] = useState(null); // { name, url } for fullscreen display
       const [savedReports, setSavedReports] = useState([]);
       const [currentFilename, setCurrentFilename] = useState(null);
       const [saveToast, setSaveToast] = useState(null); // null | message string
@@ -1144,9 +1145,18 @@
                           {chartImages.map((chart) => (
                             <div key={chart.name} style={{textAlign: 'center'}}>
                               <div style={{fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem', fontWeight: '500'}}>{chart.name}</div>
-                              <img src={chart.url} alt={`${chart.name} Performance`} style={{maxWidth: '100%', maxHeight: '400px', border: '1px solid #ddd', borderRadius: '4px'}} />
+                              <img src={chart.url} alt={`${chart.name} Performance`} style={{maxWidth: '100%', maxHeight: '400px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer'}} onClick={() => setFullscreenChart(chart)} title="Click to view fullscreen" />
                             </div>
                           ))}
+                        </div>
+                      )}
+                      {fullscreenChart && (
+                        <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '2rem'}}>
+                          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '95vw', marginBottom: '1rem', color: '#fff'}}>
+                            <span style={{fontSize: '1.2rem', fontWeight: 600}}>{fullscreenChart.name}</span>
+                            <button onClick={() => setFullscreenChart(null)} style={{background: 'none', border: 'none', color: '#fff', fontSize: '2rem', cursor: 'pointer', padding: 0}}>&times;</button>
+                          </div>
+                          <img src={fullscreenChart.url} alt={fullscreenChart.name} style={{maxWidth: '95vw', maxHeight: '90vh', objectFit: 'contain'}} />
                         </div>
                       )}
                     </div>
