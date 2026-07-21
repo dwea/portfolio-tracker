@@ -346,10 +346,11 @@
       }
 
       const { points, tickers, tickerEvents } = series;
-      const marginLeft = 60, marginRight = 100, marginTop = 40, marginBottom = 60;
+      const marginLeft = 60, marginRight = 170, marginTop = 40, marginBottom = 60;
       const chartWidth = width - marginLeft - marginRight;
       const chartHeight = height - marginTop - marginBottom;
       const formatAxisValue = (v) => mode === 'dollar' ? formatMoney(v, currency) : `${v.toFixed(1)}%`;
+      const estimateTextWidth = (str) => str.length * 7.3;
 
       let minValue = Infinity, maxValue = -Infinity;
       points.forEach(p => {
@@ -379,7 +380,7 @@
           }
         });
         return pts.length ? { key: ticker, pts, color: colorFor(ticker), isTotal: false, lastValue,
-          endX: pts[pts.length - 1][0] + 12, endY: pts[pts.length - 1][1] + 4 } : null;
+          endX: pts[pts.length - 1][0], endY: pts[pts.length - 1][1] } : null;
       }).filter(Boolean);
 
       // Small red/green dots mark days a holding's share count changed (a sell or
@@ -395,45 +396,48 @@
       });
 
       const totalPts = points.map((point, idx) => [indexToX(idx), valueToY(point.totalValue)]);
-      const totalSeries = { key: 'TOTAL', pts: totalPts, color: '#1a1a1a', isTotal: true };
+      const totalLastValue = points[points.length - 1].totalValue;
+      const totalSeries = { key: 'TOTAL', pts: totalPts, color: '#1a1a1a', isTotal: true, lastValue: totalLastValue,
+        endX: totalPts[totalPts.length - 1][0], endY: totalPts[totalPts.length - 1][1] };
 
+      const allSeriesRaw = [...tickerSeries, totalSeries];
       // Render order determines SVG stacking — hovered series renders last (on top).
-      const allSeries = [...tickerSeries, totalSeries].sort((a, b) => {
+      const allSeries = [...allSeriesRaw].sort((a, b) => {
         if (a.key === hovered) return 1;
         if (b.key === hovered) return -1;
         return 0;
       });
 
-      // Stack ticker labels vertically near each line's last point to avoid overlap,
-      // for the "resting" state. A hovered label ignores this and snaps back to its
-      // line's actual endpoint (endX/endY) instead, so it's unambiguous which line it names.
-      const labels = tickerSeries.map(s => ({
+      // Total sits in the same stacked label column as every ticker, positioned as close
+      // as possible to its own line's last point without overlapping any other label.
+      const labelRows = allSeriesRaw.map(s => ({
         key: s.key,
         color: s.color,
+        isTotal: s.isTotal,
         lastValue: s.lastValue,
         endX: s.endX,
         endY: s.endY,
-        x: s.endX,
-        y: s.endY,
-      })).sort((a, b) => a.y - b.y);
-      for (let i = 0; i < labels.length; i++) {
-        for (let j = i + 1; j < labels.length; j++) {
-          if (labels[i].y + 13 > labels[j].y - 1) labels[j].y = labels[i].y + 14;
+        labelY: s.endY + 4,
+      })).sort((a, b) => a.labelY - b.labelY);
+      for (let i = 0; i < labelRows.length; i++) {
+        for (let j = i + 1; j < labelRows.length; j++) {
+          if (labelRows[i].labelY + 13 > labelRows[j].labelY - 1) labelRows[j].labelY = labelRows[i].labelY + 14;
         }
       }
-      // Hovered label renders last (on top) and at its true endpoint, with a white
-      // backing box (rough width estimate — good enough at these font sizes).
-      const orderedLabels = [...labels].sort((a, b) => (a.key === hovered ? 1 : b.key === hovered ? -1 : 0));
-      const estimateTextWidth = (str) => str.length * 7.3;
+      // Hovered row renders last (on top) so its pill/box never sits under a neighbor's.
+      const orderedLabelRows = [...labelRows].sort((a, b) => (a.key === hovered ? 1 : b.key === hovered ? -1 : 0));
+      const displayKey = (key) => key === 'TOTAL' ? 'Total' : key;
 
-      const totalLastPt = totalPts[totalPts.length - 1];
-      const totalLastValue = points[points.length - 1].totalValue;
-      const totalValueStr = formatAxisValue(totalLastValue);
-      // Right-anchored so the label ends flush at the line's own last point, instead of
-      // extending rightward into the stacked ticker-label column.
-      const totalFontSize = hovered === 'TOTAL' ? 13 : 11;
-      const totalBoxWidth = estimateTextWidth(`Total ${totalValueStr}`) * (totalFontSize / 11) + 8;
-      const totalTextX = totalLastPt[0] - 4;
+      // Layout: [connector] … gap … [value, right-aligned] … gap … [label, left-aligned].
+      // The value is right-anchored so it grows leftward (away from the label) as it gets
+      // longer, and the gap from the plot area is wide enough that values never crowd the
+      // line endpoints themselves.
+      const valueColWidth = Math.max(...labelRows.map(r => estimateTextWidth(formatAxisValue(r.lastValue))));
+      const plotRightEdge = width - marginRight;
+      const GAP_LINE_TO_VALUE = 20;
+      const GAP_VALUE_TO_LABEL = 10;
+      const valueRightX = plotRightEdge + GAP_LINE_TO_VALUE + valueColWidth;
+      const labelLeftX = valueRightX + GAP_VALUE_TO_LABEL;
 
       const opacityFor = (key, isTotal) => {
         if (!hovered) return isTotal ? 1 : 0.6;
@@ -473,37 +477,33 @@
             </circle>
           ))}
 
-          {orderedLabels.map(l => {
-            const isHovered = hovered === l.key;
-            const ly = isHovered ? l.endY : l.y;
-            const valueText = isHovered ? formatAxisValue(l.lastValue) : '';
-            const boxWidth = isHovered ? estimateTextWidth(l.key + ' ' + valueText) + 8 : 0;
-            // Clamp so the hovered box/label never overflows past the right edge of the SVG.
-            const lx = isHovered ? Math.min(l.endX, width - 4 - boxWidth) : l.x;
+          {orderedLabelRows.map(row => {
+            const isHovered = hovered === row.key;
+            const movedDistance = Math.abs(row.labelY - (row.endY + 4));
+            const valueStr = formatAxisValue(row.lastValue);
+            const valueColor = row.lastValue >= 0 ? '#1a1a1a' : '#dc2626';
+            const pillColor = row.lastValue >= 0 ? '#dcfce7' : '#fee2e2'; // light green / light red
+            const labelWidth = estimateTextWidth(displayKey(row.key));
             return (
-              <g key={'lbl' + l.key}>
-                {isHovered && (
-                  <rect x={lx - 4} y={ly - 12} width={boxWidth} height={17} fill="white" />
+              <g key={'row' + row.key}>
+                {movedDistance > 6 && (
+                  <line x1={row.endX} y1={row.endY} x2={labelLeftX - 4} y2={row.labelY - 5} stroke={row.color} strokeWidth="0.5" opacity="0.3" />
                 )}
-                <text x={lx} y={ly} fontSize={isHovered ? 13 : 11} fontWeight="bold" fontFamily="Arial, Helvetica, sans-serif" fill={isHovered ? '#000' : l.color}
-                      opacity={opacityFor(l.key, false)} style={{cursor: 'pointer'}}
-                      onMouseEnter={() => setHovered(l.key)} onMouseLeave={() => setHovered(null)}>
-                  {l.key}
-                  {isHovered && (
-                    <tspan fontWeight="normal" fill={l.lastValue >= 0 ? '#1a1a1a' : '#dc2626'}> {valueText}</tspan>
-                  )}
+                <rect x={valueRightX - valueColWidth - 4} y={row.labelY - 9} width={valueColWidth + 8} height="16" fill="white" opacity={opacityFor(row.key, row.isTotal)} />
+                <text x={valueRightX} y={row.labelY} textAnchor="end" fontSize="10" fontFamily="Arial, Helvetica, sans-serif" fill={valueColor} opacity={opacityFor(row.key, row.isTotal)}>{valueStr}</text>
+
+                {isHovered && (
+                  <rect x={labelLeftX - 6} y={row.labelY - 10} width={labelWidth + 12} height="16" rx="8" fill={pillColor} />
+                )}
+                <text x={labelLeftX} y={row.labelY} fontSize="11" fontWeight="bold" fontFamily="Arial, Helvetica, sans-serif"
+                      fill={row.isTotal || isHovered ? '#1a1a1a' : row.color}
+                      opacity={row.isTotal ? 1 : opacityFor(row.key, false)} style={{cursor: 'pointer'}}
+                      onMouseEnter={() => setHovered(row.key)} onMouseLeave={() => setHovered(null)}>
+                  {displayKey(row.key)}
                 </text>
               </g>
             );
           })}
-
-          <rect x={totalTextX - totalBoxWidth} y={totalLastPt[1] - 9} width={totalBoxWidth} height="17" fill="white" opacity={opacityFor('TOTAL', true)} />
-          <text x={totalTextX} y={totalLastPt[1] + 4} textAnchor="end" fontSize={totalFontSize} fontFamily="Arial, Helvetica, sans-serif"
-                opacity={opacityFor('TOTAL', true)} style={{cursor: 'pointer'}}
-                onMouseEnter={() => setHovered('TOTAL')} onMouseLeave={() => setHovered(null)}>
-            <tspan fontWeight="bold" fill="#1a1a1a">Total</tspan>
-            <tspan dx="3" fill={totalLastValue >= 0 ? '#1a1a1a' : '#dc2626'}>{totalValueStr}</tspan>
-          </text>
 
           <line x1={marginLeft} y1={marginTop + chartHeight} x2={width - marginRight} y2={marginTop + chartHeight} stroke="#333" strokeWidth="1" />
           {points.map((point, idx) => {

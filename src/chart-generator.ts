@@ -36,7 +36,7 @@ function generateChartSVG(
   const width = 800;
   const height = 400;
   const marginLeft = 60;
-  const marginRight = 100; // Increased to accommodate ticker labels
+  const marginRight = 170; // Room for the value column + ticker/Total label column on the right
   const marginTop = 40;
   const marginBottom = 60;
   const chartWidth = width - marginLeft - marginRight;
@@ -163,12 +163,13 @@ function generateChartSVG(
     svg += `<text x="${marginLeft - 10}" y="${y + 4}" text-anchor="end" font-size="11" fill="#666">${label}</text>`;
   }
 
-  // Draw holding lines (thin, subtle) and track end points for labels
-  const tickerEndPoints: { [key: string]: { x: number; y: number } } = {};
+  // Draw holding lines (thin, subtle) and track end points + last value for labels
+  const tickerEndPoints: { [key: string]: { x: number; y: number; value: number } } = {};
   tickers.forEach((ticker) => {
     const points: string[] = [];
     let lastX = 0;
     let lastY = 0;
+    let lastValue = 0;
     percentChangePoints.forEach((point, idx) => {
       const holding = point.holdingsPercent.find((h) => h.ticker === ticker);
       if (holding !== undefined) {
@@ -177,12 +178,13 @@ function generateChartSVG(
         points.push(`${x},${y}`);
         lastX = x;
         lastY = y;
+        lastValue = holding.percentChange;
       }
     });
 
     if (points.length > 0) {
       svg += `<polyline points="${points.join(' ')}" fill="none" stroke="${holdingColors[ticker]}" stroke-width="1.5" opacity="0.5"/>`;
-      tickerEndPoints[ticker] = { x: lastX, y: lastY };
+      tickerEndPoints[ticker] = { x: lastX, y: lastY, value: lastValue };
     }
   });
 
@@ -201,78 +203,80 @@ function generateChartSVG(
   });
   svg += `<polyline points="${accountPoints.join(' ')}" fill="none" stroke="#1a1a1a" stroke-width="2.5"/>`;
 
-  // Smart ticker label positioning to avoid overlaps
-  interface LabelPosition {
-    ticker: string;
+  // Unified right-column labels: Total sits in the same stacked column as every ticker,
+  // positioned as close as possible to its own line's last point without overlapping
+  // any other label. Each row shows "value  label", the value right-aligned so it grows
+  // leftward (away from the label) as it gets longer, rather than colliding with it.
+  interface LabelRow {
+    key: string;
     endX: number;
     endY: number;
-    labelX: number;
+    value: number;
+    color: string;
+    isTotal: boolean;
     labelY: number;
-    width: number;
-    height: number;
   }
 
-  const labelPositions: LabelPosition[] = [];
-  const labelHeight = 13;
-  const labelWidth = 28; // Approximate width for ticker names
+  const labelRows: LabelRow[] = tickers
+    .filter((ticker) => tickerEndPoints[ticker])
+    .map((ticker) => ({
+      key: ticker,
+      endX: tickerEndPoints[ticker].x,
+      endY: tickerEndPoints[ticker].y,
+      value: tickerEndPoints[ticker].value,
+      color: holdingColors[ticker],
+      isTotal: false,
+      labelY: tickerEndPoints[ticker].y + 4,
+    }));
 
-  // First pass: try to place labels at endpoint
-  tickers.forEach((ticker) => {
-    const endPoint = tickerEndPoints[ticker];
-    if (endPoint) {
-      labelPositions.push({
-        ticker,
-        endX: endPoint.x,
-        endY: endPoint.y,
-        labelX: endPoint.x + 12,
-        labelY: endPoint.y + 4,
-        width: labelWidth,
-        height: labelHeight,
-      });
-    }
+  labelRows.push({
+    key: 'Total',
+    endX: accountLastX,
+    endY: accountLastY,
+    value: accountLastPercent,
+    color: '#1a1a1a',
+    isTotal: true,
+    labelY: accountLastY + 4,
   });
 
-  // Sort by Y position for collision resolution
-  labelPositions.sort((a, b) => a.labelY - b.labelY);
-
-  // Second pass: resolve overlaps using vertical stacking
-  for (let i = 0; i < labelPositions.length; i++) {
-    for (let j = i + 1; j < labelPositions.length; j++) {
-      const labelA = labelPositions[i];
-      const labelB = labelPositions[j];
-
-      // Check vertical overlap with minimal padding
-      if (labelA.labelY + labelA.height > labelB.labelY - 1) {
-        // Move B down to avoid A with 1px padding
-        const newY = labelA.labelY + labelA.height + 1;
-        labelB.labelY = newY;
+  // Sort by natural Y and stack downward to resolve overlaps
+  labelRows.sort((a, b) => a.labelY - b.labelY);
+  const labelLineHeight = 13;
+  for (let i = 0; i < labelRows.length; i++) {
+    for (let j = i + 1; j < labelRows.length; j++) {
+      if (labelRows[i].labelY + labelLineHeight > labelRows[j].labelY - 1) {
+        labelRows[j].labelY = labelRows[i].labelY + labelLineHeight + 1;
       }
     }
   }
 
-  // Render labels with connector lines if moved significantly
-  labelPositions.forEach((label) => {
-    const escapedTicker = escapeXml(label.ticker);
-    const movedDistance = Math.abs(label.labelY - (label.endY + 4));
+  const estimateTextWidth = (str: string): number => str.length * 6.5;
+  const formatRowValue = (v: number): string => `${v.toFixed(1)}%`;
+  const valueColWidth = Math.max(...labelRows.map((r) => estimateTextWidth(formatRowValue(r.value))));
+  const plotRightEdge = width - marginRight;
+  const GAP_LINE_TO_VALUE = 20; // gap between the plot area and the value column
+  const GAP_VALUE_TO_LABEL = 10; // gap between the value column and the label column
+  const valueRightX = plotRightEdge + GAP_LINE_TO_VALUE + valueColWidth;
+  const labelLeftX = valueRightX + GAP_VALUE_TO_LABEL;
 
-    // Draw connector line if label moved more than 6 pixels
+  labelRows.forEach((row) => {
+    const escapedKey = escapeXml(row.key);
+    const movedDistance = Math.abs(row.labelY - (row.endY + 4));
+
+    // Connector line back to the line's actual last point if the label had to move.
     if (movedDistance > 6) {
-      svg += `<line x1="${label.endX + 12}" y1="${label.endY}" x2="${label.labelX}" y2="${label.labelY - 5}" stroke="${holdingColors[label.ticker]}" stroke-width="0.5" opacity="0.3"/>`;
+      svg += `<line x1="${row.endX}" y1="${row.endY}" x2="${labelLeftX - 4}" y2="${row.labelY - 5}" stroke="${row.color}" stroke-width="0.5" opacity="0.3"/>`;
     }
 
-    svg += `<text x="${label.labelX}" y="${label.labelY}" font-size="11" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="${holdingColors[label.ticker]}" opacity="0.85">${escapedTicker}</text>`;
-  });
+    // Value: right-aligned, white backing box so longer numbers never collide with the label.
+    const valueStr = formatRowValue(row.value);
+    const valueColor = row.value >= 0 ? '#1a1a1a' : '#dc2626';
+    svg += `<rect x="${valueRightX - valueColWidth - 4}" y="${row.labelY - 9}" width="${valueColWidth + 8}" height="16" fill="white"/>`;
+    svg += `<text x="${valueRightX}" y="${row.labelY}" text-anchor="end" font-size="10" font-family="Arial, Helvetica, sans-serif" fill="${valueColor}">${valueStr}</text>`;
 
-  // "Total X%" label — right-anchored so it ends flush at the line's own last point,
-  // instead of extending rightward into the stacked ticker-label column. A white backing
-  // box keeps it legible if a ticker line or label happens to cross behind it.
-  const totalChangeColor = accountLastPercent >= 0 ? '#1a1a1a' : '#dc2626';
-  const totalLabelStr = `Total ${accountLastPercent.toFixed(1)}%`;
-  const estimateTextWidth = (str: string): number => str.length * 6.5;
-  const totalBoxWidth = estimateTextWidth(totalLabelStr) + 10;
-  const totalLabelX = accountLastX - 4;
-  svg += `<rect x="${totalLabelX - totalBoxWidth}" y="${accountLastY - 9}" width="${totalBoxWidth}" height="16" fill="white"/>`;
-  svg += `<text x="${totalLabelX}" y="${accountLastY + 4}" text-anchor="end" font-size="11" font-family="Arial, Helvetica, sans-serif"><tspan font-weight="bold" fill="#1a1a1a">Total</tspan><tspan dx="3" fill="${totalChangeColor}">${accountLastPercent.toFixed(1)}%</tspan></text>`;
+    // Label: left-aligned, starting a fixed gap after the value column.
+    svg += `<text x="${labelLeftX}" y="${row.labelY}" font-size="11" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="${row.color}" opacity="${row.isTotal ? 1 : 0.85}">${escapedKey}</text>`;
+  });
 
   // X-axis
   svg += `<line x1="${marginLeft}" y1="${marginTop + chartHeight}" x2="${width - marginRight}" y2="${marginTop + chartHeight}" stroke="#333" stroke-width="1"/>`;
