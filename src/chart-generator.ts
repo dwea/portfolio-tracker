@@ -122,9 +122,12 @@ function generateChartSVG(
     return marginLeft + (index / (dataPoints.length - 1)) * chartWidth;
   };
 
-  // Get all unique tickers
+  // Get all unique tickers — Cash is excluded from the chart itself (it has no price,
+  // so its line would always sit flat at 0%, which just clutters the legend).
   const allTickers = new Set<string>();
   dataPoints.forEach((p) => p.holdings.forEach((h) => allTickers.add(h.ticker)));
+  allTickers.delete('Cash');
+  allTickers.delete('CASH');
   const tickers = Array.from(allTickers);
 
   // Color palette for holdings
@@ -260,10 +263,16 @@ function generateChartSVG(
     svg += `<text x="${label.labelX}" y="${label.labelY}" font-size="11" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="${holdingColors[label.ticker]}" opacity="0.85">${escapedTicker}</text>`;
   });
 
-  // Add "Total" label with percentage change at the end of account total line
+  // "Total X%" label — right-anchored so it ends flush at the line's own last point,
+  // instead of extending rightward into the stacked ticker-label column. A white backing
+  // box keeps it legible if a ticker line or label happens to cross behind it.
   const totalChangeColor = accountLastPercent >= 0 ? '#1a1a1a' : '#dc2626';
-  svg += `<text x="${accountLastX + 12}" y="${accountLastY + 6}" font-size="11" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="#1a1a1a">Total</text>`;
-  svg += `<text x="${accountLastX + 55}" y="${accountLastY + 6}" font-size="10" font-family="Arial, Helvetica, sans-serif" fill="${totalChangeColor}">${accountLastPercent.toFixed(1)}%</text>`;
+  const totalLabelStr = `Total ${accountLastPercent.toFixed(1)}%`;
+  const estimateTextWidth = (str: string): number => str.length * 6.5;
+  const totalBoxWidth = estimateTextWidth(totalLabelStr) + 10;
+  const totalLabelX = accountLastX - 4;
+  svg += `<rect x="${totalLabelX - totalBoxWidth}" y="${accountLastY - 9}" width="${totalBoxWidth}" height="16" fill="white"/>`;
+  svg += `<text x="${totalLabelX}" y="${accountLastY + 4}" text-anchor="end" font-size="11" font-family="Arial, Helvetica, sans-serif"><tspan font-weight="bold" fill="#1a1a1a">Total</tspan><tspan dx="3" fill="${totalChangeColor}">${accountLastPercent.toFixed(1)}%</tspan></text>`;
 
   // X-axis
   svg += `<line x1="${marginLeft}" y1="${marginTop + chartHeight}" x2="${width - marginRight}" y2="${marginTop + chartHeight}" stroke="#333" stroke-width="1"/>`;

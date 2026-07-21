@@ -233,8 +233,7 @@
           "targetWeight": 0,
           "weightTriggerAbove": 5,
           "priceTriggerAbove": 20,
-          "priceTriggerBelow": 5,
-          "manualPrice": 10.5
+          "priceTriggerBelow": 5
         },
         {
           "ticker": "XEU.TO",

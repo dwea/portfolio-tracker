@@ -215,14 +215,18 @@
     function buildChartSeries(history, mode) {
       if (!history || history.length === 0) return null;
 
+      // Cash is excluded from the chart entirely — it has no price, so its line would
+      // always sit flat at 0%, which just clutters the legend.
       const dataPoints = history.map(row => ({
         date: row.date,
         accountTotal: row.accountTotal,
-        holdings: (row.snapshot || []).map(h => ({
-          ticker: h.displayTicker || h.ticker,
-          shares: h.shares,
-          price: typeof h.price === 'number' ? h.price : null, // null for cash / failed lookups
-        })),
+        holdings: (row.snapshot || [])
+          .filter(h => (h.displayTicker || h.ticker) !== 'Cash' && (h.displayTicker || h.ticker) !== 'CASH')
+          .map(h => ({
+            ticker: h.displayTicker || h.ticker,
+            shares: h.shares,
+            price: typeof h.price === 'number' ? h.price : null, // null for failed lookups
+          })),
       }));
 
       const baselineTotal = dataPoints[0].accountTotal;
@@ -424,11 +428,12 @@
 
       const totalLastPt = totalPts[totalPts.length - 1];
       const totalLastValue = points[points.length - 1].totalValue;
-      // "Total" sits at a fixed +12/+55 offset from its own name/value; when hovered,
-      // clamp so the (wider, boxed) value text never overflows past the right edge.
-      const totalBoxWidth = 43 + estimateTextWidth(formatAxisValue(totalLastValue)) + 8;
-      const totalNameX = hovered === 'TOTAL' ? Math.min(totalLastPt[0] + 12, width - 4 - totalBoxWidth + 4) : totalLastPt[0] + 12;
-      const totalValueX = hovered === 'TOTAL' ? totalNameX + 43 : totalLastPt[0] + 55;
+      const totalValueStr = formatAxisValue(totalLastValue);
+      // Right-anchored so the label ends flush at the line's own last point, instead of
+      // extending rightward into the stacked ticker-label column.
+      const totalFontSize = hovered === 'TOTAL' ? 13 : 11;
+      const totalBoxWidth = estimateTextWidth(`Total ${totalValueStr}`) * (totalFontSize / 11) + 8;
+      const totalTextX = totalLastPt[0] - 4;
 
       const opacityFor = (key, isTotal) => {
         if (!hovered) return isTotal ? 1 : 0.6;
@@ -492,13 +497,13 @@
             );
           })}
 
-          {hovered === 'TOTAL' && (
-            <rect x={totalNameX - 4} y={totalLastPt[1] - 6} width={totalBoxWidth} height={17} fill="white" />
-          )}
-          <text x={totalNameX} y={totalLastPt[1] + 6} fontSize={hovered === 'TOTAL' ? 13 : 11} fontWeight="bold" fontFamily="Arial, Helvetica, sans-serif" fill="#1a1a1a"
+          <rect x={totalTextX - totalBoxWidth} y={totalLastPt[1] - 9} width={totalBoxWidth} height="17" fill="white" opacity={opacityFor('TOTAL', true)} />
+          <text x={totalTextX} y={totalLastPt[1] + 4} textAnchor="end" fontSize={totalFontSize} fontFamily="Arial, Helvetica, sans-serif"
                 opacity={opacityFor('TOTAL', true)} style={{cursor: 'pointer'}}
-                onMouseEnter={() => setHovered('TOTAL')} onMouseLeave={() => setHovered(null)}>Total</text>
-          <text x={totalValueX} y={totalLastPt[1] + 6} fontSize="10" fontFamily="Arial, Helvetica, sans-serif" fill={totalLastValue >= 0 ? '#1a1a1a' : '#dc2626'} opacity={opacityFor('TOTAL', true)}>{mode === 'dollar' ? formatMoney(totalLastValue, currency) : `${totalLastValue.toFixed(1)}%`}</text>
+                onMouseEnter={() => setHovered('TOTAL')} onMouseLeave={() => setHovered(null)}>
+            <tspan fontWeight="bold" fill="#1a1a1a">Total</tspan>
+            <tspan dx="3" fill={totalLastValue >= 0 ? '#1a1a1a' : '#dc2626'}>{totalValueStr}</tspan>
+          </text>
 
           <line x1={marginLeft} y1={marginTop + chartHeight} x2={width - marginRight} y2={marginTop + chartHeight} stroke="#333" strokeWidth="1" />
           {points.map((point, idx) => {
