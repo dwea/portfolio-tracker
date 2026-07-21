@@ -1135,6 +1135,8 @@
           const result = await resp.json();
           if (!resp.ok) throw new Error(result.error || 'Failed to load chart data');
           setChartData(result.charts);
+          // Keep the fullscreen view (if open) in sync with the reloaded data for its account
+          setFullscreenChart(prev => prev ? (result.charts.find(c => c.name === prev.name) || prev) : prev);
         } catch (err) {
           setChartData([{ name: 'Error', error: err.message }]);
         } finally {
@@ -1520,6 +1522,17 @@
                           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '95vw', marginBottom: '1rem', color: '#fff'}}>
                             <span style={{fontSize: '1.2rem', fontWeight: 600}}>{fullscreenChart.name}</span>
                             <button onClick={() => setFullscreenChart(null)} style={{background: 'none', border: 'none', color: '#fff', fontSize: '2rem', cursor: 'pointer', padding: 0}}>&times;</button>
+                          </div>
+                          <div style={{display: 'flex', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.4rem'}}>
+                            {[{label: '7D', value: 7}, {label: '30D', value: 30}, {label: 'All', value: 'all'}].map(opt => (
+                              <button key={opt.label}
+                                className={`btn ${String(chartsDays) === String(opt.value) ? 'btn-primary' : 'btn-secondary'}`}
+                                style={{padding: '0.25rem 0.7rem', fontSize: '0.75rem'}}
+                                disabled={chartsLoading}
+                                onClick={() => loadCharts(chartsFile, opt.value)}>
+                                {opt.label}
+                              </button>
+                            ))}
                           </div>
                           <div style={{display: 'flex', justifyContent: 'center', gap: '0.4rem', marginBottom: '1rem'}}>
                             {[{label: '% Change', value: 'percent'}, {label: '$ Change', value: 'dollar'}].map(opt => (
