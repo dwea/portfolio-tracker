@@ -33,7 +33,7 @@
           "ticker": "AAPL",
           "shares": 30,
           "name": "AAPL",
-          "targetWeight": 3.8,
+          "targetWeight": 5.3,
           "weightTriggerAbove": 9,
           "weightTriggerBelow": 0
         },
@@ -41,14 +41,14 @@
           "ticker": "AMZN.TO",
           "shares": 317,
           "name": "AMZN.TO",
-          "targetWeight": 2.6,
+          "targetWeight": 3.6,
           "weightTriggerAbove": 7
         },
         {
           "ticker": "CIF.TO",
-          "shares": 305,
+          "shares": 755,
           "name": "CIF",
-          "targetWeight": 7.6,
+          "targetWeight": 10.5,
           "weightTriggerAbove": 12,
           "weightTriggerBelow": 0
         },
@@ -56,56 +56,48 @@
           "ticker": "GOOG",
           "shares": 28,
           "name": "GOOG",
-          "targetWeight": 3.8,
+          "targetWeight": 5.3,
           "weightTriggerAbove": 9
         },
         {
           "ticker": "IAU",
           "name": "IAU",
-          "shares": 275,
+          "shares": 75,
           "weightTriggerAbove": 20,
           "weightTriggerBelow": 8,
-          "targetWeight": 17.6
+          "targetWeight": 24.3
         },
         {
           "ticker": "VE.TO",
           "shares": 981,
           "name": "VE",
-          "targetWeight": 11.2,
+          "targetWeight": 15.5,
           "weightTriggerAbove": 15,
           "weightTriggerBelow": 3
-        },
-        {
-          "ticker": "VTI",
-          "name": "VTI",
-          "shares": 210,
-          "targetWeight": 27.4,
-          "weightTriggerAbove": 28,
-          "weightTriggerBelow": 16
         },
         {
           "ticker": "XBB.TO",
           "shares": 1897,
           "name": "XBB.TO",
           "weightTriggerBelow": 2,
-          "targetWeight": 10,
+          "targetWeight": 13.8,
           "weightTriggerAbove": 14
         },
         {
           "ticker": "XSP.TO",
           "shares": 702,
           "name": "XSP",
-          "targetWeight": 15,
+          "targetWeight": 20.7,
           "weightTriggerAbove": 18,
           "weightTriggerBelow": 6
         },
         {
           "ticker": "XDIV.TO",
           "name": "XDIV.TO",
-          "shares": 602
+          "shares": 2602
         }
       ],
-      "cash": 24173.93,
+      "cash": 29022.86,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,
@@ -160,49 +152,46 @@
       "stocks": [
         {
           "ticker": "EQL-F.TO",
-          "shares": 829,
+          "shares": 429,
           "name": "EQL-F",
-          "targetWeight": 22,
+          "targetWeight": 24.5,
           "weightTriggerAbove": 28,
           "weightTriggerBelow": 16
         },
         {
           "ticker": "IAU",
-          "shares": 120,
+          "shares": 60,
           "name": "IAU",
           "weightTriggerBelow": 19,
-          "targetWeight": 25,
+          "targetWeight": 27.8,
           "weightTriggerAbove": 31
-        },
-        {
-          "ticker": "PICK",
-          "shares": 165,
-          "name": "PICK",
-          "weightTriggerAbove": 16,
-          "weightTriggerBelow": 4,
-          "targetWeight": 10
         },
         {
           "ticker": "VTI",
           "shares": 115,
           "name": "VTI",
-          "targetWeight": 38,
+          "targetWeight": 42.3,
           "weightTriggerAbove": 44,
           "weightTriggerBelow": 32
         },
         {
           "ticker": "XEF.TO",
           "shares": 121,
-          "targetWeight": 4,
+          "targetWeight": 4.4,
           "weightTriggerAbove": 9
         },
         {
           "ticker": "VDY.TO",
           "name": "VDY.TO",
-          "shares": 275
+          "shares": 550
+        },
+        {
+          "ticker": "XDIV.TO",
+          "name": "XDIV.TO",
+          "shares": 333
         }
       ],
-      "cash": 2836.24,
+      "cash": 150,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,

@@ -7,6 +7,22 @@ const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 const QUOTE_CACHE = new Map<string, QuoteData>();
 let USD_TO_CAD = 1.4;
 
+// QUOTE_CACHE has no per-request scope — server.js's /api/chart-data endpoint calls
+// calculateAccount() in-process (not via a fresh CLI subprocess like scheduled/manual
+// reports do), so without a TTL a ticker fetched once would stay cached at that price
+// forever, across every future day the server stays up. A short TTL still dedups
+// repeated Yahoo calls for the same ticker across accounts within one report run,
+// while guaranteeing any call more than a few minutes apart gets a genuinely live quote.
+const QUOTE_CACHE_TTL_MS = 2 * 60 * 1000;
+let quoteCacheTimestamp = 0;
+function ensureFreshQuoteCache(): void {
+  const now = Date.now();
+  if (now - quoteCacheTimestamp > QUOTE_CACHE_TTL_MS) {
+    QUOTE_CACHE.clear();
+    quoteCacheTimestamp = now;
+  }
+}
+
 // Add delay helper
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -157,6 +173,7 @@ async function getQuote(ticker: string): Promise<QuoteData> {
 }
 
 export async function calculateAccount(account: Account): Promise<AccountData> {
+  ensureFreshQuoteCache();
   await getExchangeRate();
 
   // Batch fetch quotes — skip 0-share watchlist items (value is always $0)
