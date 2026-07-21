@@ -201,6 +201,334 @@
       { value: 'charts',    label: 'Charts' },
     ];
 
+    // ── INTERACTIVE CHARTS ────────────────────────────────────────────
+    const CHART_COLORS = [
+      '#d3d3d3', '#a9a9a9', '#808080', '#696969', '#505050',
+      '#36454f', '#2f4f4f', '#708090', '#778899', '#b0c4de',
+    ];
+
+    // Converts raw {date, accountTotal, snapshot}[] history rows into a change series
+    // (from the earliest point) for the total and each ticker, in either % or $ terms.
+    // Both modes are built from price movement only, not raw position value — so
+    // buying/selling shares changes a ticker's future exposure but is never itself
+    // counted as a gain or loss (a purchase is a cost-basis change, not growth).
+    function buildChartSeries(history, mode) {
+      if (!history || history.length === 0) return null;
+
+      const dataPoints = history.map(row => ({
+        date: row.date,
+        accountTotal: row.accountTotal,
+        holdings: (row.snapshot || []).map(h => ({
+          ticker: h.displayTicker || h.ticker,
+          shares: h.shares,
+          price: typeof h.price === 'number' ? h.price : null, // null for cash / failed lookups
+        })),
+      }));
+
+      const baselineTotal = dataPoints[0].accountTotal;
+      const tickers = Array.from(new Set(dataPoints.flatMap(p => p.holdings.map(h => h.ticker))));
+
+      // Per ticker: a running $ growth series — each day adds (shares held going into
+      // that day) * (that day's price change) — and a pure price-return % series
+      // (relative to the ticker's first-appearance price). A holding with no price
+      // (e.g. the synthetic Cash row) simply never accrues growth.
+      const tickerGrowth = {};  // ticker -> $ array aligned to dataPoints
+      const tickerPercent = {}; // ticker -> % array aligned to dataPoints
+      const totalGrowth = new Array(dataPoints.length).fill(0);
+
+      tickers.forEach(ticker => {
+        let prevPrice = null;
+        let prevShares = 0;
+        let priceBase = null;
+        let cumGrowth = 0;
+        const growthArr = new Array(dataPoints.length).fill(0);
+        const percentArr = new Array(dataPoints.length).fill(0);
+
+        dataPoints.forEach((point, idx) => {
+          const h = point.holdings.find(hh => hh.ticker === ticker);
+          const price = h ? h.price : null;
+
+          if (priceBase === null && price !== null) priceBase = price;
+          if (prevPrice !== null && price !== null) {
+            cumGrowth += prevShares * (price - prevPrice);
+          }
+          growthArr[idx] = cumGrowth;
+          percentArr[idx] = (priceBase !== null && price !== null)
+            ? ((price - priceBase) / priceBase) * 100
+            : (idx > 0 ? percentArr[idx - 1] : 0);
+
+          if (price !== null) prevPrice = price;
+          if (h) prevShares = h.shares;
+        });
+
+        tickerGrowth[ticker] = growthArr;
+        tickerPercent[ticker] = percentArr;
+        growthArr.forEach((g, idx) => { totalGrowth[idx] += g; });
+      });
+
+      const points = dataPoints.map((point, idx) => ({
+        date: point.date,
+        totalValue: mode === 'dollar'
+          ? totalGrowth[idx]
+          : (baselineTotal > 0 ? (totalGrowth[idx] / baselineTotal) * 100 : 0),
+        holdingsValue: point.holdings.map(h => ({
+          ticker: h.ticker,
+          value: mode === 'dollar' ? tickerGrowth[h.ticker][idx] : tickerPercent[h.ticker][idx],
+        })),
+      }));
+
+      // Detect buy/sell events per ticker (share count changed day-over-day) so the
+      // chart can mark them — a sale shifts value to cash and isn't a real "loss",
+      // it just looks like one on the line.
+      const tickerEvents = {};
+      tickers.forEach(ticker => {
+        const events = [];
+        let prevShares = null;
+        dataPoints.forEach((point, idx) => {
+          const holding = point.holdings.find(h => h.ticker === ticker);
+          const sharesOnDay = holding ? holding.shares : 0;
+          if (prevShares !== null && sharesOnDay !== prevShares) {
+            if (sharesOnDay > prevShares) {
+              events.push({ idx, type: 'buy', sharesBefore: prevShares, sharesAfter: sharesOnDay });
+            } else {
+              events.push({ idx: sharesOnDay > 0 ? idx : idx - 1, type: 'sell', sharesBefore: prevShares, sharesAfter: sharesOnDay });
+            }
+          }
+          prevShares = sharesOnDay;
+        });
+        tickerEvents[ticker] = events;
+      });
+
+      return { points, tickers, tickerEvents };
+    }
+
+    function formatMoney(value, currency) {
+      const symbol = currency === 'CAD' ? 'C$' : '$';
+      const sign = value < 0 ? '-' : '';
+      return `${sign}${symbol}${Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    }
+
+    // Reports the actual date span of fetched data and how stale the latest point is,
+    // so it's clear whether "today" is actually included.
+    function formatDateRangeLabel(history) {
+      if (!history || history.length === 0) return null;
+      const dates = history.map(h => h.date).slice().sort();
+      const first = dates[0];
+      const last = dates[dates.length - 1];
+      const today = new Date();
+      const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const [ly, lm, ld] = last.split('-').map(Number);
+      const lastMidnight = new Date(ly, lm - 1, ld);
+      const daysAgo = Math.round((todayMidnight - lastMidnight) / 86400000);
+
+      let recency;
+      if (daysAgo <= 0) recency = "today's data included";
+      else if (daysAgo === 1) recency = 'most recent: yesterday';
+      else recency = `most recent: ${daysAgo} days ago`;
+
+      return `${first} → ${last} · ${recency}`;
+    }
+
+    // Inline SVG performance chart. Hovering a line (or its label) brings it to full
+    // opacity and the top render layer, subduing every other line to 60% opacity.
+    function InteractiveChart({ name, currency, history, mode = 'percent', width = 800, height = 400 }) {
+      const [hovered, setHovered] = useState(null); // ticker string, 'TOTAL', or null
+      const [hoveredDot, setHoveredDot] = useState(null); // { ticker, idx } of a hovered buy/sell dot, or null
+
+      const series = React.useMemo(() => buildChartSeries(history, mode), [history, mode]);
+
+      if (!series || series.points.length === 0) {
+        return <div style={{padding: '2rem 1rem', color: '#999', fontSize: '0.8rem', textAlign: 'center'}}>No historical data yet for {name}</div>;
+      }
+
+      const { points, tickers, tickerEvents } = series;
+      const marginLeft = 60, marginRight = 100, marginTop = 40, marginBottom = 60;
+      const chartWidth = width - marginLeft - marginRight;
+      const chartHeight = height - marginTop - marginBottom;
+      const formatAxisValue = (v) => mode === 'dollar' ? formatMoney(v, currency) : `${v.toFixed(1)}%`;
+
+      let minValue = Infinity, maxValue = -Infinity;
+      points.forEach(p => {
+        minValue = Math.min(minValue, p.totalValue);
+        maxValue = Math.max(maxValue, p.totalValue);
+        p.holdingsValue.forEach(h => {
+          minValue = Math.min(minValue, h.value);
+          maxValue = Math.max(maxValue, h.value);
+        });
+      });
+      const valueRange = (maxValue - minValue) || 10;
+      const pad = valueRange * 0.15;
+      const yMin = minValue - pad, yMax = maxValue + pad;
+
+      const valueToY = (v) => marginTop + chartHeight - ((v - yMin) / (yMax - yMin)) * chartHeight;
+      const indexToX = (idx) => marginLeft + (points.length === 1 ? 0 : (idx / (points.length - 1)) * chartWidth);
+      const colorFor = (ticker) => CHART_COLORS[tickers.indexOf(ticker) % CHART_COLORS.length];
+
+      const tickerSeries = tickers.map(ticker => {
+        const pts = [];
+        let lastValue = 0;
+        points.forEach((point, idx) => {
+          const h = point.holdingsValue.find(hh => hh.ticker === ticker);
+          if (h !== undefined) {
+            pts.push([indexToX(idx), valueToY(h.value)]);
+            lastValue = h.value;
+          }
+        });
+        return pts.length ? { key: ticker, pts, color: colorFor(ticker), isTotal: false, lastValue,
+          endX: pts[pts.length - 1][0] + 12, endY: pts[pts.length - 1][1] + 4 } : null;
+      }).filter(Boolean);
+
+      // Small red/green dots mark days a holding's share count changed (a sell or
+      // buy) — so a value drop from selling reads as "I sold this" instead of a crash.
+      const tradeDots = tickers.flatMap(ticker => {
+        const events = tickerEvents[ticker] || [];
+        return events.map(ev => {
+          const h = points[ev.idx]?.holdingsValue.find(hh => hh.ticker === ticker);
+          if (!h) return null;
+          return { ticker, idx: ev.idx, type: ev.type, sharesBefore: ev.sharesBefore, sharesAfter: ev.sharesAfter,
+            x: indexToX(ev.idx), y: valueToY(h.value) };
+        }).filter(Boolean);
+      });
+
+      const totalPts = points.map((point, idx) => [indexToX(idx), valueToY(point.totalValue)]);
+      const totalSeries = { key: 'TOTAL', pts: totalPts, color: '#1a1a1a', isTotal: true };
+
+      // Render order determines SVG stacking — hovered series renders last (on top).
+      const allSeries = [...tickerSeries, totalSeries].sort((a, b) => {
+        if (a.key === hovered) return 1;
+        if (b.key === hovered) return -1;
+        return 0;
+      });
+
+      // Stack ticker labels vertically near each line's last point to avoid overlap,
+      // for the "resting" state. A hovered label ignores this and snaps back to its
+      // line's actual endpoint (endX/endY) instead, so it's unambiguous which line it names.
+      const labels = tickerSeries.map(s => ({
+        key: s.key,
+        color: s.color,
+        lastValue: s.lastValue,
+        endX: s.endX,
+        endY: s.endY,
+        x: s.endX,
+        y: s.endY,
+      })).sort((a, b) => a.y - b.y);
+      for (let i = 0; i < labels.length; i++) {
+        for (let j = i + 1; j < labels.length; j++) {
+          if (labels[i].y + 13 > labels[j].y - 1) labels[j].y = labels[i].y + 14;
+        }
+      }
+      // Hovered label renders last (on top) and at its true endpoint, with a white
+      // backing box (rough width estimate — good enough at these font sizes).
+      const orderedLabels = [...labels].sort((a, b) => (a.key === hovered ? 1 : b.key === hovered ? -1 : 0));
+      const estimateTextWidth = (str) => str.length * 7.3;
+
+      const totalLastPt = totalPts[totalPts.length - 1];
+      const totalLastValue = points[points.length - 1].totalValue;
+      // "Total" sits at a fixed +12/+55 offset from its own name/value; when hovered,
+      // clamp so the (wider, boxed) value text never overflows past the right edge.
+      const totalBoxWidth = 43 + estimateTextWidth(formatAxisValue(totalLastValue)) + 8;
+      const totalNameX = hovered === 'TOTAL' ? Math.min(totalLastPt[0] + 12, width - 4 - totalBoxWidth + 4) : totalLastPt[0] + 12;
+      const totalValueX = hovered === 'TOTAL' ? totalNameX + 43 : totalLastPt[0] + 55;
+
+      const opacityFor = (key, isTotal) => {
+        if (!hovered) return isTotal ? 1 : 0.6;
+        return hovered === key ? 1 : 0.6;
+      };
+      const widthFor = (key, isTotal) => {
+        const base = isTotal ? 2.5 : 1.5;
+        return hovered === key ? base + 1 : base;
+      };
+
+      return (
+        <svg viewBox={`0 0 ${width} ${height}`} style={{width: '100%', height: 'auto', maxWidth: width}}>
+          <rect width={width} height={height} fill="white" />
+          {[0, 1, 2, 3, 4, 5].map(i => (
+            <line key={'g' + i} x1={marginLeft} y1={marginTop + (i / 5) * chartHeight} x2={width - marginRight} y2={marginTop + (i / 5) * chartHeight} stroke="#efefef" strokeWidth="1" />
+          ))}
+          <line x1={marginLeft} y1={valueToY(0)} x2={width - marginRight} y2={valueToY(0)} stroke="#999" strokeWidth="1" strokeDasharray="4,4" opacity="0.6" />
+          {[0, 1, 2, 3, 4, 5].map(i => {
+            const v = yMin + (i / 5) * (yMax - yMin);
+            return <text key={'yl' + i} x={marginLeft - 10} y={valueToY(v) + 4} textAnchor="end" fontSize="11" fill="#666">{formatAxisValue(v)}</text>;
+          })}
+
+          {allSeries.map(s => (
+            <g key={s.key} onMouseEnter={() => setHovered(s.key)} onMouseLeave={() => setHovered(null)} style={{cursor: 'pointer'}}>
+              <polyline points={s.pts.map(p => p.join(',')).join(' ')} fill="none" stroke="transparent" strokeWidth="14" />
+              <polyline points={s.pts.map(p => p.join(',')).join(' ')} fill="none" stroke={hovered === s.key ? '#000' : s.color} strokeWidth={widthFor(s.key, s.isTotal)} opacity={opacityFor(s.key, s.isTotal)} />
+            </g>
+          ))}
+
+          {tradeDots.map((d, i) => (
+            <circle key={'dot' + d.ticker + i} cx={d.x} cy={d.y} r={hovered === d.ticker ? 10 : 7}
+                    fill={d.type === 'sell' ? '#dc2626' : '#16a34a'} stroke="white" strokeWidth="1"
+                    opacity={opacityFor(d.ticker, false)} style={{cursor: 'pointer'}}
+                    onMouseEnter={() => { setHovered(d.ticker); setHoveredDot({ ticker: d.ticker, idx: d.idx }); }}
+                    onMouseLeave={() => { setHovered(null); setHoveredDot(null); }}>
+              <title>{`${d.ticker}: ${d.type === 'sell' ? 'shares sold' : 'shares bought'}`}</title>
+            </circle>
+          ))}
+
+          {orderedLabels.map(l => {
+            const isHovered = hovered === l.key;
+            const ly = isHovered ? l.endY : l.y;
+            const valueText = isHovered ? formatAxisValue(l.lastValue) : '';
+            const boxWidth = isHovered ? estimateTextWidth(l.key + ' ' + valueText) + 8 : 0;
+            // Clamp so the hovered box/label never overflows past the right edge of the SVG.
+            const lx = isHovered ? Math.min(l.endX, width - 4 - boxWidth) : l.x;
+            return (
+              <g key={'lbl' + l.key}>
+                {isHovered && (
+                  <rect x={lx - 4} y={ly - 12} width={boxWidth} height={17} fill="white" />
+                )}
+                <text x={lx} y={ly} fontSize={isHovered ? 13 : 11} fontWeight="bold" fontFamily="Arial, Helvetica, sans-serif" fill={isHovered ? '#000' : l.color}
+                      opacity={opacityFor(l.key, false)} style={{cursor: 'pointer'}}
+                      onMouseEnter={() => setHovered(l.key)} onMouseLeave={() => setHovered(null)}>
+                  {l.key}
+                  {isHovered && (
+                    <tspan fontWeight="normal" fill={l.lastValue >= 0 ? '#1a1a1a' : '#dc2626'}> {valueText}</tspan>
+                  )}
+                </text>
+              </g>
+            );
+          })}
+
+          {hovered === 'TOTAL' && (
+            <rect x={totalNameX - 4} y={totalLastPt[1] - 6} width={totalBoxWidth} height={17} fill="white" />
+          )}
+          <text x={totalNameX} y={totalLastPt[1] + 6} fontSize={hovered === 'TOTAL' ? 13 : 11} fontWeight="bold" fontFamily="Arial, Helvetica, sans-serif" fill="#1a1a1a"
+                opacity={opacityFor('TOTAL', true)} style={{cursor: 'pointer'}}
+                onMouseEnter={() => setHovered('TOTAL')} onMouseLeave={() => setHovered(null)}>Total</text>
+          <text x={totalValueX} y={totalLastPt[1] + 6} fontSize="10" fontFamily="Arial, Helvetica, sans-serif" fill={totalLastValue >= 0 ? '#1a1a1a' : '#dc2626'} opacity={opacityFor('TOTAL', true)}>{mode === 'dollar' ? formatMoney(totalLastValue, currency) : `${totalLastValue.toFixed(1)}%`}</text>
+
+          <line x1={marginLeft} y1={marginTop + chartHeight} x2={width - marginRight} y2={marginTop + chartHeight} stroke="#333" strokeWidth="1" />
+          {points.map((point, idx) => {
+            const step = Math.max(1, Math.floor(points.length / 6));
+            if (idx % step !== 0) return null;
+            return <text key={'xl' + idx} x={indexToX(idx)} y={marginTop + chartHeight + 20} textAnchor="middle" fontSize="11" fill="#666">{point.date.substring(5)}</text>;
+          })}
+          <line x1={marginLeft} y1={marginTop} x2={marginLeft} y2={marginTop + chartHeight} stroke="#333" strokeWidth="1" />
+          <text x={width / 2} y={25} textAnchor="middle" fontSize="16" fontWeight="bold">{name} — {mode === 'dollar' ? '$ Growth' : '% Change'} from Price, Since Earliest Data</text>
+
+          {hoveredDot && (() => {
+            const d = tradeDots.find(dot => dot.ticker === hoveredDot.ticker && dot.idx === hoveredDot.idx);
+            if (!d) return null;
+            const delta = d.sharesAfter - d.sharesBefore;
+            const deltaText = `${delta > 0 ? '+' : ''}${delta.toLocaleString()} shares`;
+            const boxWidth = estimateTextWidth(deltaText) + 10;
+            const cx = Math.min(Math.max(d.x, marginLeft + boxWidth / 2), width - marginRight - boxWidth / 2 - 4);
+            const cy = d.y - 12;
+            return (
+              <g>
+                <rect x={cx - boxWidth / 2} y={cy - 12} width={boxWidth} height={17} fill="white" stroke="#ddd" strokeWidth="1" />
+                <text x={cx} y={cy} textAnchor="middle" fontSize="11" fontWeight="bold" fontFamily="Arial, Helvetica, sans-serif"
+                      fill={delta < 0 ? '#dc2626' : '#16a34a'}>{deltaText}</text>
+              </g>
+            );
+          })()}
+        </svg>
+      );
+    }
+
     function App() {
       const [config, setConfig] = useState(null);
       const [reportsError, setReportsError] = useState(null); // error loading reports list
@@ -212,8 +540,23 @@
       const [quickPreviewResult, setQuickPreviewResult] = useState(null);   // { filename, detailed, short, error }
       const [chartsFile, setChartsFile] = useState(null); // filename currently showing charts
       const [chartsLoading, setChartsLoading] = useState(false);
-      const [chartImages, setChartImages] = useState([]); // array of {name, url}
-      const [fullscreenChart, setFullscreenChart] = useState(null); // { name, url } for fullscreen display
+      const [chartsDays, setChartsDays] = useState(30); // 7, 30, or 'all'
+      const [chartsMode, setChartsMode] = useState('percent'); // 'percent' | 'dollar'
+      const [chartData, setChartData] = useState([]); // array of {name, currency, history}
+      const [fullscreenChart, setFullscreenChart] = useState(null); // { name, history } for fullscreen display
+      const [fullscreenChartHeight, setFullscreenChartHeight] = useState(550); // fills available viewport height, capped at 2x base (1100)
+
+      useEffect(() => {
+        if (!fullscreenChart) return;
+        const computeHeight = () => {
+          const reserved = 200; // title bar + mode toggle + modal padding
+          const available = window.innerHeight - reserved;
+          setFullscreenChartHeight(Math.max(300, Math.min(1100, available)));
+        };
+        computeHeight();
+        window.addEventListener('resize', computeHeight);
+        return () => window.removeEventListener('resize', computeHeight);
+      }, [fullscreenChart]);
       const [savedReports, setSavedReports] = useState([]);
       const [currentFilename, setCurrentFilename] = useState(null);
       const [saveToast, setSaveToast] = useState(null); // null | message string
@@ -782,25 +1125,18 @@
         }
       };
 
-      const loadCharts = async (filename) => {
+      const loadCharts = async (filename, days = chartsDays) => {
         setChartsFile(filename);
-        setChartImages([]);
+        setChartsDays(days);
+        setChartData([]);
         setChartsLoading(true);
         try {
-          // Request chart generation from the server
-          const resp = await fetch(`/api/charts/${filename}`, { method: 'POST' });
+          const resp = await fetch(`/api/chart-data/${filename}?days=${days}`);
           const result = await resp.json();
-          if (!resp.ok) throw new Error(result.error || 'Failed to generate charts');
-
-          // Set chart images from the response
-          const charts = result.charts.map(chart => ({
-            name: chart.name,
-            url: chart.url,
-            error: chart.error
-          }));
-          setChartImages(charts);
+          if (!resp.ok) throw new Error(result.error || 'Failed to load chart data');
+          setChartData(result.charts);
         } catch (err) {
-          setChartImages([{ name: 'Error', url: null, error: err.message }]);
+          setChartData([{ name: 'Error', error: err.message }]);
         } finally {
           setChartsLoading(false);
         }
@@ -1071,6 +1407,7 @@
             <button className="btn btn-secondary" onClick={loadJSON}>Open</button>
             {config && <button className="btn btn-secondary" title="Refresh prices &amp; rebalance data" onClick={() => { setRebalanceState({}); config.accounts.forEach((_, i) => analyzeRebalance(i)); }}>↻ Refresh</button>}
             {config && <button className="btn btn-primary" onClick={saveJSON} style={isDirty ? {background: '#d97706', borderColor: '#d97706'} : {}}>{isDirty ? 'Save *' : 'Save'}</button>}
+            {config && <button className="btn btn-secondary" title="Back to portfolio list" onClick={() => { if (!isDirty || confirm('You have unsaved changes. Go back without saving?')) { setConfig(null); setCurrentFilename(null); setIsDirty(false); setEditorTab('portfolio'); } }}>⌂ Home</button>}
             {saveToast && <span style={{fontSize: '0.75rem', color: '#16a34a', fontWeight: 500}}>{saveToast}</span>}
           </div>
         </div>
@@ -1132,31 +1469,71 @@
                       )}
                     </div>
                   )}
-                  {chartImages.length > 0 && (
+                  {chartData.length > 0 && (
                     <div style={{marginTop: '1.25rem', textAlign: 'center', maxWidth: '100%'}}>
-                      <div style={{fontSize: '0.7rem', color: '#888', marginBottom: '0.8rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem'}}>
+                      <div style={{fontSize: '0.7rem', color: '#888', marginBottom: '0.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem'}}>
                         {chartsFile.replace('.json', '')} — Charts
-                        {' '}<button style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: '#aaa', padding: 0}} onClick={() => setChartImages([])}>✕</button>
+                        {' '}<button style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: '#aaa', padding: 0}} onClick={() => setChartData([])}>✕</button>
                       </div>
-                      {chartImages[0].error ? (
-                        <div style={{color: '#dc2626', fontSize: '0.75rem'}}>Error: {chartImages[0].error}</div>
+                      {chartData[0].error ? (
+                        <div style={{color: '#dc2626', fontSize: '0.75rem'}}>Error: {chartData[0].error}</div>
                       ) : (
-                        <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center'}}>
-                          {chartImages.map((chart) => (
-                            <div key={chart.name} style={{textAlign: 'center'}}>
-                              <div style={{fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem', fontWeight: '500'}}>{chart.name}</div>
-                              <img src={chart.url} alt={`${chart.name} Performance`} style={{maxWidth: '100%', maxHeight: '400px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer'}} onClick={() => setFullscreenChart(chart)} title="Click to view fullscreen" />
+                        <React.Fragment>
+                          <div style={{display: 'flex', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.4rem'}}>
+                            {[{label: '7D', value: 7}, {label: '30D', value: 30}, {label: 'All', value: 'all'}].map(opt => (
+                              <button key={opt.label}
+                                className={`btn ${String(chartsDays) === String(opt.value) ? 'btn-primary' : 'btn-secondary'}`}
+                                style={{padding: '0.25rem 0.7rem', fontSize: '0.75rem'}}
+                                disabled={chartsLoading}
+                                onClick={() => loadCharts(chartsFile, opt.value)}>
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                          <div style={{display: 'flex', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.4rem'}}>
+                            {[{label: '% Change', value: 'percent'}, {label: '$ Change', value: 'dollar'}].map(opt => (
+                              <button key={opt.label}
+                                className={`btn ${chartsMode === opt.value ? 'btn-primary' : 'btn-secondary'}`}
+                                style={{padding: '0.25rem 0.7rem', fontSize: '0.75rem'}}
+                                onClick={() => setChartsMode(opt.value)}>
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                          {chartData[0].history && (
+                            <div style={{fontSize: '0.7rem', color: '#999', marginBottom: '0.8rem'}}>
+                              {formatDateRangeLabel(chartData[0].history)}
                             </div>
-                          ))}
-                        </div>
+                          )}
+                          <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center'}}>
+                            {chartData.map((chart) => (
+                              <div key={chart.name} style={{position: 'relative', width: '100%', maxWidth: '800px', border: '1px solid #ddd', borderRadius: '4px', padding: '0.5rem'}}>
+                                <button onClick={() => setFullscreenChart(chart)} title="Expand fullscreen" style={{position: 'absolute', top: '0.6rem', right: '0.6rem', zIndex: 1, background: '#fff', border: '1px solid #ddd', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#666'}}>⛶</button>
+                                <InteractiveChart name={chart.name} currency={chart.currency} history={chart.history} mode={chartsMode} />
+                              </div>
+                            ))}
+                          </div>
+                        </React.Fragment>
                       )}
                       {fullscreenChart && (
-                        <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '2rem'}}>
+                        <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '2rem', overflowY: 'auto'}}>
                           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '95vw', marginBottom: '1rem', color: '#fff'}}>
                             <span style={{fontSize: '1.2rem', fontWeight: 600}}>{fullscreenChart.name}</span>
                             <button onClick={() => setFullscreenChart(null)} style={{background: 'none', border: 'none', color: '#fff', fontSize: '2rem', cursor: 'pointer', padding: 0}}>&times;</button>
                           </div>
-                          <img src={fullscreenChart.url} alt={fullscreenChart.name} style={{maxWidth: '95vw', maxHeight: '90vh', objectFit: 'contain'}} />
+                          <div style={{display: 'flex', justifyContent: 'center', gap: '0.4rem', marginBottom: '1rem'}}>
+                            {[{label: '% Change', value: 'percent'}, {label: '$ Change', value: 'dollar'}].map(opt => (
+                              <button key={opt.label}
+                                className={`btn ${chartsMode === opt.value ? 'btn-primary' : 'btn-secondary'}`}
+                                style={{padding: '0.25rem 0.7rem', fontSize: '0.75rem'}}
+                                onClick={() => setChartsMode(opt.value)}>
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                          <div style={{background: '#fff', borderRadius: '4px', padding: '1rem', width: 'min(1150px, 95vw)'}}>
+                            <InteractiveChart name={fullscreenChart.name} currency={fullscreenChart.currency} history={fullscreenChart.history} mode={chartsMode} width={1100} height={fullscreenChartHeight} />
+                          </div>
                         </div>
                       )}
                     </div>

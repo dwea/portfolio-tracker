@@ -7,6 +7,7 @@ import { calculateAccount } from './calculator.js';
 import { formatShort, formatDetailed, formatRebalanceReport } from './formatter.js';
 import { generateSparkline } from './sparkline.js';
 import { generateAccountChart } from './chart-generator.js';
+import { insertSnapshot, buildSnapshotHoldings } from './db.js';
 
 // Redirect all console.log to stderr so only the formatted message goes to stdout
 const origLog = console.log;
@@ -57,6 +58,19 @@ async function runPreview(): Promise<void> {
   }
 
   if (format === 'charts') {
+    // Refresh today's snapshot with the live quotes fetched above, so the chart's
+    // last data point reflects current prices rather than whatever was last saved.
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timestamp = now.toISOString();
+    for (const account of accounts) {
+      await insertSnapshot(
+        dateStr, timestamp, account.name, account.currency, account.total,
+        grandTotal, grandTotalChange, grandTotalChangePercent,
+        JSON.stringify(buildSnapshotHoldings(account))
+      );
+    }
+
     // Generate charts for each account
     const charts = [];
     for (const account of config.accounts) {

@@ -20,10 +20,6 @@
     {
       "when": "weekdays-at-14",
       "format": "detailed"
-    },
-    {
-      "when": "weekdays-at-15",
-      "format": "charts"
     }
   ],
   "alertRecipients": [
@@ -35,7 +31,7 @@
       "stocks": [
         {
           "ticker": "AAPL",
-          "shares": 45,
+          "shares": 30,
           "name": "AAPL",
           "targetWeight": 3.8,
           "weightTriggerAbove": 9,
@@ -50,7 +46,7 @@
         },
         {
           "ticker": "CIF.TO",
-          "shares": 375,
+          "shares": 305,
           "name": "CIF",
           "targetWeight": 7.6,
           "weightTriggerAbove": 12,
@@ -73,7 +69,7 @@
         },
         {
           "ticker": "VE.TO",
-          "shares": 967,
+          "shares": 981,
           "name": "VE",
           "targetWeight": 11.2,
           "weightTriggerAbove": 15,
@@ -89,7 +85,7 @@
         },
         {
           "ticker": "XBB.TO",
-          "shares": 1892,
+          "shares": 1897,
           "name": "XBB.TO",
           "weightTriggerBelow": 2,
           "targetWeight": 10,
@@ -97,7 +93,7 @@
         },
         {
           "ticker": "XSP.TO",
-          "shares": 700,
+          "shares": 702,
           "name": "XSP",
           "targetWeight": 15,
           "weightTriggerAbove": 18,
@@ -106,10 +102,10 @@
         {
           "ticker": "XDIV.TO",
           "name": "XDIV.TO",
-          "shares": 601
+          "shares": 602
         }
       ],
-      "cash": 29992.88,
+      "cash": 24173.93,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,
@@ -129,7 +125,7 @@
         },
         {
           "ticker": "XDIV.TO",
-          "shares": 1135,
+          "shares": 1138,
           "weightTriggerAbove": 27,
           "weightTriggerBelow": 13,
           "name": "XDIV",
@@ -138,20 +134,20 @@
         {
           "ticker": "XEF.TO",
           "name": "XEF.TO",
-          "shares": 600,
+          "shares": 609,
           "targetWeight": 20,
           "weightTriggerAbove": 27,
           "weightTriggerBelow": 13
         },
         {
           "ticker": "XEU.TO",
-          "shares": 121,
+          "shares": 123,
           "weightTriggerAbove": 11,
           "name": "XEU",
           "targetWeight": 5
         }
       ],
-      "cash": 65.42,
+      "cash": 118.87,
       "currency": "CAD",
       "startingValue": 99000,
       "targetValue": 110000,
@@ -164,7 +160,7 @@
       "stocks": [
         {
           "ticker": "EQL-F.TO",
-          "shares": 827,
+          "shares": 829,
           "name": "EQL-F",
           "targetWeight": 22,
           "weightTriggerAbove": 28,
@@ -196,12 +192,17 @@
         },
         {
           "ticker": "XEF.TO",
-          "shares": 120,
+          "shares": 121,
           "targetWeight": 4,
           "weightTriggerAbove": 9
+        },
+        {
+          "ticker": "VDY.TO",
+          "name": "VDY.TO",
+          "shares": 275
         }
       ],
-      "cash": 23730.64,
+      "cash": 2836.24,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,
@@ -226,7 +227,7 @@
           "weightTriggerBelow": 13
         }
       ],
-      "cash": 600.17,
+      "cash": 626.14,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,
@@ -239,9 +240,10 @@
     "showChange": true,
     "showWeight": false,
     "showPrice": false,
-    "showAllInCAD": false,
+    "showAllInCAD": true,
     "showWarnings": false,
     "showWatching": false,
+    "showTickerSuffix": false,
     "sortBy": "change"
   },
   "strategyGoals": "Too much iau, need to get cash working, consider world conflict impact on valatility \n",

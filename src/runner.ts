@@ -7,7 +7,7 @@ import { calculateAccount, pingYahoo } from './calculator.js';
 import { formatShort, formatDetailed, formatRebalanceReport } from './formatter.js';
 import { sendTextMessage } from './messenger.js';
 import { generateSparkline } from './sparkline.js';
-import { insertSnapshot, closeDatabase } from './db.js';
+import { insertSnapshot, closeDatabase, buildSnapshotHoldings } from './db.js';
 import { generateAccountChart } from './chart-generator.js';
 
 // Load environment variables from .env file
@@ -139,7 +139,7 @@ async function generateAndSendReport(config: Report, schedule: Schedule, testMod
           reportData.grandTotal,
           reportData.grandTotalChange,
           reportData.grandTotalChangePercent,
-          JSON.stringify(account.holdings)
+          JSON.stringify(buildSnapshotHoldings(account))
         );
       }
       await log(`✓ Saved daily snapshot to database`);

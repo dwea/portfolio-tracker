@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 interface ChartDataPoint {
   date: string;
   accountTotal: number;
-  holdings: Array<{ ticker: string; value: number }>;
+  holdings: Array<{ ticker: string; shares: number; price: number | null }>;
 }
 
 // Escape special XML characters for safe SVG inclusion
@@ -42,23 +42,56 @@ function generateChartSVG(
   const chartWidth = width - marginLeft - marginRight;
   const chartHeight = height - marginTop - marginBottom;
 
-  // Get baseline (first data point) values
-  const baselineTotal = dataPoints[0].accountTotal;
-  const baselineHoldings: { [key: string]: number } = {};
-  dataPoints[0].holdings.forEach((h) => {
-    baselineHoldings[h.ticker] = h.value;
+  // Per ticker: a running $ growth series — each day adds (shares held going into
+  // that day) * (that day's price change) — and a pure price-return % series
+  // (relative to the ticker's first-appearance price). A holding with no price
+  // (e.g. the synthetic Cash row) simply never accrues growth. This keeps a share
+  // purchase/sale from ever looking like a gain or loss on the chart, and the
+  // account total is the sum of each ticker's price-driven growth rather than raw
+  // value, so it also isn't skewed by trades or cash deposits/withdrawals.
+  const allTickersForCalc = new Set<string>();
+  dataPoints.forEach((p) => p.holdings.forEach((h) => allTickersForCalc.add(h.ticker)));
+
+  const tickerPercent: { [key: string]: number[] } = {};
+  const totalGrowth: number[] = new Array(dataPoints.length).fill(0);
+
+  allTickersForCalc.forEach((ticker) => {
+    let prevPrice: number | null = null;
+    let prevShares = 0;
+    let priceBase: number | null = null;
+    let cumGrowth = 0;
+    const growthArr: number[] = new Array(dataPoints.length).fill(0);
+    const percentArr: number[] = new Array(dataPoints.length).fill(0);
+
+    dataPoints.forEach((point, idx) => {
+      const h = point.holdings.find((hh) => hh.ticker === ticker);
+      const price = h ? h.price : null;
+
+      if (priceBase === null && price !== null) priceBase = price;
+      if (prevPrice !== null && price !== null) {
+        cumGrowth += prevShares * (price - prevPrice);
+      }
+      growthArr[idx] = cumGrowth;
+      percentArr[idx] = (priceBase !== null && price !== null)
+        ? ((price - priceBase) / priceBase) * 100
+        : (idx > 0 ? percentArr[idx - 1] : 0);
+
+      if (price !== null) prevPrice = price;
+      if (h) prevShares = h.shares;
+    });
+
+    tickerPercent[ticker] = percentArr;
+    growthArr.forEach((g, idx) => { totalGrowth[idx] += g; });
   });
 
-  // Calculate percentage changes
-  const percentChangePoints = dataPoints.map((point) => ({
+  const baselineTotal = dataPoints[0].accountTotal;
+  const percentChangePoints = dataPoints.map((point, idx) => ({
     ...point,
-    accountTotalPercent: baselineTotal > 0 ? ((point.accountTotal - baselineTotal) / baselineTotal) * 100 : 0,
+    accountTotalPercent: baselineTotal > 0 ? (totalGrowth[idx] / baselineTotal) * 100 : 0,
     holdingsPercent: point.holdings.map((h) => ({
       ticker: h.ticker,
-      percentChange: baselineHoldings[h.ticker] && baselineHoldings[h.ticker] > 0
-        ? ((h.value - baselineHoldings[h.ticker]) / baselineHoldings[h.ticker]) * 100
-        : 0
-    }))
+      percentChange: tickerPercent[h.ticker][idx],
+    })),
   }));
 
   // Find percentage range
@@ -247,7 +280,7 @@ function generateChartSVG(
   svg += `<line x1="${marginLeft}" y1="${marginTop}" x2="${marginLeft}" y2="${marginTop + chartHeight}" stroke="#333" stroke-width="1"/>`;
 
   // Title
-  svg += `<text x="${width / 2}" y="25" text-anchor="middle" font-size="16" font-weight="bold">${accountName} — % Change from Earliest Data</text>`;
+  svg += `<text x="${width / 2}" y="25" text-anchor="middle" font-size="16" font-weight="bold">${accountName} — % Change from Price, Since Earliest Data</text>`;
 
   svg += '</svg>';
   return svg;
@@ -283,7 +316,8 @@ export async function generateAccountChart(
       accountTotal: row.accountTotal,
       holdings: row.snapshot.map((h: any) => ({
         ticker: h.displayTicker || h.ticker,
-        value: h.value,
+        shares: h.shares,
+        price: typeof h.price === 'number' ? h.price : null,
       })),
     }));
 

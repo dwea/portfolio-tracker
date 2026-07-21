@@ -10,7 +10,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import crypto from 'crypto';
 import cron from 'node-cron';
-import { getHistory } from './src/db.js';
+import { getHistory, insertSnapshot, buildSnapshotHoldings } from './src/db.js';
 
 const execAsync = promisify(exec);
 const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from .env
@@ -20,6 +20,14 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+// Only the real production instance (port 3000, run via PM2) should ever actually fire
+// scheduled sends/snapshots. Any other port (e.g. 3001, used for preview/dev testing)
+// runs with cron scheduling disabled so it can never send duplicate live notifications
+// or race the production instance's writes.
+const CRON_ENABLED = String(PORT) === '3000';
+if (!CRON_ENABLED) {
+  console.log(`[Cron] Disabled — running on port ${PORT}, not the production port (3000).`);
+}
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -272,11 +280,15 @@ function scheduleReport(reportDef) {
 
     const format = schedule.format || 'detailed';
 
-    console.log(`Scheduling ${reportName} (${format}): ${cronExpression} - ${cronToHuman(cronExpression)}`);
+    console.log(`Scheduling ${reportName} (${format}): ${cronExpression} - ${cronToHuman(cronExpression)}${CRON_ENABLED ? '' : ' [disabled, non-production port]'}`);
 
-    const job = cron.schedule(cronExpression, () => {
-      runReport(reportName, format, schedule.when);
-    });
+    // Stub job when cron is disabled — never actually fires, but still supports
+    // .stop() so the rest of the reschedule/bookkeeping logic works unchanged.
+    const job = CRON_ENABLED
+      ? cron.schedule(cronExpression, () => {
+          runReport(reportName, format, schedule.when);
+        })
+      : { stop: () => {} };
 
     jobs.push({
       job,
@@ -691,39 +703,6 @@ app.post('/api/reports/:filename/run', async (req, res) => {
   }
 });
 
-// Generate charts for a report
-app.post('/api/charts/:filename', async (req, res) => {
-  try {
-    const filename = req.params.filename;
-    const filePath = path.join(__dirname, 'reports', filename);
-
-    if (!existsSync(filePath)) {
-      return res.status(404).json({ error: 'Report not found' });
-    }
-
-    const content = await readFile(filePath, 'utf-8');
-    const reportDef = JSON.parse(content);
-
-    // Import generateAccountChart at runtime
-    const { generateAccountChart } = await import('./src/chart-generator.js');
-
-    // Generate charts for each account
-    const charts = [];
-    for (const account of reportDef.accounts) {
-      try {
-        const url = await generateAccountChart(null, account.name, account.currency || 'CAD', 30);
-        charts.push({ name: account.name, url });
-      } catch (err) {
-        charts.push({ name: account.name, error: err.message });
-      }
-    }
-
-    res.json({ success: true, charts });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Get all schedules
 app.get('/api/schedules', async (req, res) => {
   try {
@@ -775,6 +754,13 @@ app.get('/api/reports/:filename/logs', async (req, res) => {
   }
 });
 
+// 'all' isn't a real day count — treat it as "way more days than any account could have"
+function parseDaysParam(raw) {
+  if (raw === 'all') return 36500;
+  const parsed = parseInt(String(raw));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 30;
+}
+
 // Get historical data for an account (for charting)
 app.get('/api/history', async (req, res) => {
   try {
@@ -783,8 +769,63 @@ app.get('/api/history', async (req, res) => {
       return res.status(400).json({ error: 'account query parameter required' });
     }
 
-    const history = await getHistory(String(account), parseInt(String(days)));
+    const history = await getHistory(String(account), parseDaysParam(days));
     res.json(history);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get raw historical data (account total + per-holding values) for every account in a
+// report, for rendering interactive charts client-side instead of static PNGs.
+app.get('/api/chart-data/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'reports', filename);
+
+    if (!existsSync(filePath)) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    const content = await readFile(filePath, 'utf-8');
+    const reportDef = JSON.parse(content);
+    const days = parseDaysParam(req.query.days);
+
+    // Refresh today's snapshot with live quotes so intra-day chart views are accurate —
+    // this overwrites whatever was saved the last time any report/chart ran today.
+    try {
+      const { calculateAccount } = await import('./src/calculator.js');
+      const liveAccounts = [];
+      for (const account of reportDef.accounts) {
+        liveAccounts.push(await calculateAccount(account));
+      }
+      const grandTotal = liveAccounts.reduce((sum, acc) => sum + acc.total, 0);
+      const grandTotalChange = liveAccounts.reduce((sum, acc) => sum + acc.totalChange, 0);
+      const previousGrandTotal = grandTotal - grandTotalChange;
+      const grandTotalChangePercent = previousGrandTotal > 0 ? (grandTotalChange / previousGrandTotal) * 100 : 0;
+
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const timestamp = now.toISOString();
+
+      for (const account of liveAccounts) {
+        await insertSnapshot(
+          dateStr, timestamp, account.name, account.currency, account.total,
+          grandTotal, grandTotalChange, grandTotalChangePercent,
+          JSON.stringify(buildSnapshotHoldings(account))
+        );
+      }
+    } catch (liveErr) {
+      console.error('Chart live-refresh failed, falling back to last saved history:', liveErr.message);
+    }
+
+    const charts = [];
+    for (const account of reportDef.accounts) {
+      const history = await getHistory(account.name, days);
+      charts.push({ name: account.name, currency: account.currency || 'CAD', history });
+    }
+
+    res.json({ success: true, charts });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

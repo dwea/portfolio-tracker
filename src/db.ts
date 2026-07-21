@@ -2,6 +2,23 @@ import initSqlJs, { Database as SqlJsDatabase } from 'sql.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { mkdir } from 'fs/promises';
+import type { AccountData, HoldingData } from './types.js';
+
+// Cash isn't part of account.holdings, so it wouldn't otherwise be recorded in a
+// snapshot at all — add it as a synthetic holding purely for history/charting.
+export function buildSnapshotHoldings(account: AccountData): HoldingData[] {
+  const cashHolding: HoldingData = {
+    ticker: 'CASH',
+    displayTicker: 'Cash',
+    value: account.cash,
+    change: 0,
+    changePercent: 0,
+    weight: account.cashWeight,
+    shares: 0,
+    triggered: false,
+  };
+  return [...account.holdings, cashHolding];
+}
 
 let db: SqlJsDatabase | null = null;
 let SQL: any = null;
@@ -81,6 +98,13 @@ export async function insertSnapshot(
   if (!db) throw new Error('Failed to initialize database');
 
   try {
+    // A given (date, account) should have exactly one snapshot — replace any existing
+    // row for this day rather than accumulating one per report run, so re-running
+    // (e.g. viewing charts intra-day) always reflects the latest values for "today".
+    db.run(
+      `DELETE FROM daily_snapshots WHERE date = ? AND account_name = ?`,
+      [date, accountName]
+    );
     db.run(
       `INSERT INTO daily_snapshots
        (date, timestamp, account_name, account_currency, account_total,
@@ -116,10 +140,13 @@ export async function getHistory(
   if (!db) throw new Error('Failed to initialize database');
 
   try {
+    // strftime('%w', date) is 0=Sunday..6=Saturday — drop weekends since markets
+    // are closed and those points would just flatline the chart.
     const results = db.exec(
       `SELECT date, account_total, snapshot FROM daily_snapshots
        WHERE account_name = '${accountName.replace(/'/g, "''")}'
        AND date >= date('now', '-${days} days')
+       AND strftime('%w', date) NOT IN ('0', '6')
        ORDER BY date ASC`
     );
 
