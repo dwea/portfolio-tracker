@@ -102,7 +102,7 @@ export function formatShort(data: ReportData, options?: FormatOptions): string {
           const { sym: hSym, div } = holdingDisplay(holding, sym, showAllInCAD);
           let line = '';
           if (opts.showChangeIcons) {
-            line += holding.lookupFailed ? '⚠️' : (holding.changePercent >= 0 ? '🟩' : '🟥');
+            line += holding.lookupFailed ? (holding.manualPriceUsed ? '📌' : '⚠️') : (holding.changePercent >= 0 ? '🟩' : '🟥');
           }
           line += `   ${applyTickerSuffix(holding.displayTicker, opts)}`;
           if (opts.showPrice && holding.price != null) line += ` ${hSym}${(holding.price / div).toFixed(2)}`;
@@ -168,7 +168,7 @@ export function formatDetailed(data: ReportData, options?: FormatOptions): strin
       const { sym: hSym, div } = holdingDisplay(holding, sym, showAllInCAD);
       let line = '';
       if (opts.showChangeIcons) {
-        line += holding.lookupFailed ? '⚠️' : (holding.changePercent >= 0 ? '🟩' : '🟥');
+        line += holding.lookupFailed ? (holding.manualPriceUsed ? '📌' : '⚠️') : (holding.changePercent >= 0 ? '🟩' : '🟥');
       }
       line += `   ${applyTickerSuffix(holding.displayTicker, opts)}`;
       if (opts.showPrice && holding.price != null) line += ` ${hSym}${(holding.price / div).toFixed(2)}`;
@@ -191,7 +191,7 @@ export function formatDetailed(data: ReportData, options?: FormatOptions): strin
         const { sym: hSym, div } = holdingDisplay(holding, sym, showAllInCAD);
         let line = '';
         if (opts.showChangeIcons) {
-          line += holding.lookupFailed ? '⚠️' : (holding.changePercent >= 0 ? '🟩' : '🟥');
+          line += holding.lookupFailed ? (holding.manualPriceUsed ? '📌' : '⚠️') : (holding.changePercent >= 0 ? '🟩' : '🟥');
         }
         line += `   ${applyTickerSuffix(holding.displayTicker, opts)}`;
         if (opts.showPrice && holding.price != null) line += ` ${hSym}${(holding.price / div).toFixed(2)}`;

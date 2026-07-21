@@ -8,6 +8,7 @@ export interface Holding {
   priceTriggerBelow?: number;
   excludeFromAlerts?: boolean;
   targetWeight?: number;  // % of account total; set by AI strategy
+  manualPrice?: number;   // fallback price (in account currency) for tickers Yahoo can't resolve, e.g. proprietary fund codes
 }
 
 export interface Account {
@@ -61,6 +62,7 @@ export interface HoldingData {
   shares: number;
   triggered: boolean;
   lookupFailed?: boolean;
+  manualPriceUsed?: boolean; // true if a manually-entered price was used because Yahoo couldn't resolve this ticker
   fiftyTwoWeekHigh?: number;
   fiftyTwoWeekLow?: number;
   fiftyDayAverage?: number;

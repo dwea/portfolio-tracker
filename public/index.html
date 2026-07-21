@@ -1769,7 +1769,17 @@
                           <input type="text" style={{font:'inherit',border:'1px solid #d1d5db',borderRadius:'3px',padding:'0.15rem 0.3rem',width:'100%',boxSizing:'border-box'}} value={stock.ticker || ''} onChange={(e) => { const v = e.target.value; setConfig(prev => { const c = JSON.parse(JSON.stringify(prev)); c.accounts[accIdx].stocks[stockIdx].ticker = v || ''; c.accounts[accIdx].stocks[stockIdx].name = undefined; return c; }); setPreviewResult(null); }} placeholder="Ticker" />
                         </div>
                         <input className="hi-shares" type="text" inputMode="decimal" key={`shares-${accIdx}-${stockIdx}-${stock.shares}`} defaultValue={stock.shares} onBlur={(e) => { const val = parseFloat(e.target.value); updateConfig(`accounts.${accIdx}.stocks.${stockIdx}.shares`, isNaN(val) ? 0 : val); }} />
-                        <span className="hi-stat hi-price" title="Current price in account currency">{priceStr}</span>
+                        {hd?.lookupFailed && stock.shares > 0 ? (
+                          <input className="hi-stat hi-price" type="text" inputMode="decimal"
+                            style={{border: '1px solid #f5c542', borderRadius: '3px', textAlign: 'right', padding: '0.1rem 0.2rem', boxSizing: 'border-box'}}
+                            key={`manualprice-${accIdx}-${stockIdx}-${stock.manualPrice}`}
+                            defaultValue={stock.manualPrice ?? ''}
+                            placeholder="price?"
+                            title="Yahoo can't find this ticker — enter its price manually (e.g. from your statement)"
+                            onBlur={(e) => { const val = parseFloat(e.target.value); updateConfig(`accounts.${accIdx}.stocks.${stockIdx}.manualPrice`, isNaN(val) ? undefined : val); }} />
+                        ) : (
+                          <span className="hi-stat hi-price" title="Current price in account currency">{priceStr}</span>
+                        )}
                         <span className="hi-stat hi-wt" title="Current portfolio weight">{wtStr}</span>
                         <span className="hi-targ">
                           <button className="hi-adj" onClick={() => adjustTargetWeight(accIdx, stockIdx, -1)} disabled={stock.targetWeight == null}>−</button>

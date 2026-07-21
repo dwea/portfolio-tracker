@@ -186,11 +186,19 @@ export async function calculateAccount(account: Account): Promise<AccountData> {
   // Calculate each holding
   for (const holding of account.stocks) {
     const quote = await getQuote(holding.ticker);
-    let value = quote.price * holding.shares;
-    let previousValue = quote.previousClose * holding.shares;
+
+    // Tickers Yahoo can't resolve (e.g. proprietary fund codes like an IG Wealth fund)
+    // fall back to a manually-entered price, in the account's own currency — so no FX
+    // conversion and no day-over-day change, since there's no live quote to compare against.
+    const manualPriceUsed = quote.lookupFailed === true && holding.manualPrice != null;
+    const nativePrice = manualPriceUsed ? holding.manualPrice! : quote.price;
+    const nativePreviousClose = manualPriceUsed ? holding.manualPrice! : quote.previousClose;
+
+    let value = nativePrice * holding.shares;
+    let previousValue = nativePreviousClose * holding.shares;
 
     // Convert USD to CAD if needed
-    const convFactor = (quote.currency === 'USD' && account.currency === 'CAD') ? USD_TO_CAD : 1;
+    const convFactor = (!manualPriceUsed && quote.currency === 'USD' && account.currency === 'CAD') ? USD_TO_CAD : 1;
     if (convFactor !== 1) {
       value *= convFactor;
       previousValue *= convFactor;
@@ -198,8 +206,8 @@ export async function calculateAccount(account: Account): Promise<AccountData> {
 
     const change = value - previousValue;
     // Use raw price ratio so 0-share watch holdings still show actual daily % move
-    const changePercent = quote.previousClose > 0
-      ? (quote.price - quote.previousClose) / quote.previousClose * 100
+    const changePercent = nativePreviousClose > 0
+      ? (nativePrice - nativePreviousClose) / nativePreviousClose * 100
       : 0;
 
     holdings.push({
@@ -207,7 +215,7 @@ export async function calculateAccount(account: Account): Promise<AccountData> {
       displayTicker: holding.ticker.includes(':')
         ? holding.ticker.split(':')[1]
         : holding.ticker,
-      price: quote.lookupFailed ? undefined : quote.price * convFactor,
+      price: (quote.lookupFailed && !manualPriceUsed) ? undefined : nativePrice * convFactor,
       convFactor: convFactor !== 1 ? convFactor : undefined,
       value,
       change,
@@ -216,6 +224,7 @@ export async function calculateAccount(account: Account): Promise<AccountData> {
       shares: holding.shares,
       triggered: false, // Will set after trigger checks
       lookupFailed: quote.lookupFailed,
+      manualPriceUsed,
       fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh ? quote.fiftyTwoWeekHigh * convFactor : undefined,
       fiftyTwoWeekLow: quote.fiftyTwoWeekLow ? quote.fiftyTwoWeekLow * convFactor : undefined,
       fiftyDayAverage: quote.fiftyDayAverage ? quote.fiftyDayAverage * convFactor : undefined,
