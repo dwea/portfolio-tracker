@@ -1144,6 +1144,17 @@
         }
       };
 
+      // Cycle the fullscreen chart to the next/previous account within the current report
+      const navigateFullscreen = (delta) => {
+        setFullscreenChart(prev => {
+          if (!prev || chartData.length === 0) return prev;
+          const idx = chartData.findIndex(c => c.name === prev.name);
+          if (idx === -1) return prev;
+          const nextIdx = (idx + delta + chartData.length) % chartData.length;
+          return chartData[nextIdx];
+        });
+      };
+
       // ── AI STRATEGY ─────────────────────────────────────────────────
       // Compute initial strategyEdits that scale existing weights to 100% when all suggestions are OFF
       const computeSuggestionInitEdits = (suggestions) => {
@@ -1520,7 +1531,11 @@
                       {fullscreenChart && (
                         <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '2rem', overflowY: 'auto'}}>
                           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '95vw', marginBottom: '1rem', color: '#fff'}}>
-                            <span style={{fontSize: '1.2rem', fontWeight: 600}}>{fullscreenChart.name}</span>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                              <button onClick={() => navigateFullscreen(-1)} disabled={chartData.length < 2} title="Previous account" style={{background: 'none', border: '1px solid #666', borderRadius: '4px', color: '#fff', fontSize: '1rem', cursor: chartData.length < 2 ? 'default' : 'pointer', opacity: chartData.length < 2 ? 0.4 : 1, width: '28px', height: '28px'}}>‹</button>
+                              <span style={{fontSize: '1.2rem', fontWeight: 600}}>{fullscreenChart.name}</span>
+                              <button onClick={() => navigateFullscreen(1)} disabled={chartData.length < 2} title="Next account" style={{background: 'none', border: '1px solid #666', borderRadius: '4px', color: '#fff', fontSize: '1rem', cursor: chartData.length < 2 ? 'default' : 'pointer', opacity: chartData.length < 2 ? 0.4 : 1, width: '28px', height: '28px'}}>›</button>
+                            </div>
                             <button onClick={() => setFullscreenChart(null)} style={{background: 'none', border: 'none', color: '#fff', fontSize: '2rem', cursor: 'pointer', padding: 0}}>&times;</button>
                           </div>
                           <div style={{display: 'flex', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.4rem'}}>
