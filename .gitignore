@@ -2,6 +2,7 @@ node_modules/
 dist/
 logs/*.log
 data/*.json
+data/*.lock
 *.log
 
 # Environment variables
