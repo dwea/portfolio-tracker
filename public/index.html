@@ -1536,13 +1536,14 @@
                 </div>
               ) : savedReports.length > 0 ? (
                 <div>
-                  <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+                  <p style={{marginBottom: '0.75rem', fontSize: '0.75rem', color: '#888'}}>Click report name to edit</p>
+                  <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '2rem'}}>
                     {savedReports.map((f, idx) => {
                       const isChartsLoading = chartsLoading && chartsFile === f;
                       const isReportLoading = quickPreviewingFile === f;
                       return (
-                        <div key={f} style={{display: 'flex', gap: '0.4rem', alignItems: 'center', padding: '1.1rem 0', width: '460px', justifyContent: 'center', borderBottom: idx !== savedReports.length - 1 ? '1px solid #eee' : 'none'}}>
-                          <button style={{width: '200px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', fontFamily: 'inherit', fontSize: '1.4rem', fontWeight: 700, background: 'none', border: 'none', padding: '0.5rem 0.2rem', cursor: 'pointer'}} onClick={() => loadFromServer(f)} title="Edit this report">
+                        <div key={f} style={{display: 'flex', gap: '0.4rem', alignItems: 'center', padding: '1rem 0.75rem', width: '100%', maxWidth: '460px', justifyContent: 'center', boxSizing: 'border-box', borderBottom: idx !== savedReports.length - 1 ? '1px solid #eee' : 'none'}}>
+                          <button style={{width: '170px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', fontFamily: 'inherit', fontSize: '1.1rem', fontWeight: 700, color: '#000', background: 'none', border: 'none', padding: '0.5rem 0.2rem', cursor: 'pointer'}} onClick={() => loadFromServer(f)} title="Edit this report">
                             <span>{f.replace('.json', '')}</span>
                           </button>
                           <button className="btn btn-secondary btn-preview-tall" style={{display: 'flex', alignItems: 'center', gap: '0.35rem'}} onClick={() => loadCharts(f)} disabled={isChartsLoading} title="View charts for this report">

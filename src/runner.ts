@@ -176,7 +176,7 @@ async function generateAndSendReport(config: Report, schedule: Schedule, testMod
           ? formatRebalanceReport(reportData, config.formatOptions)
           : formatDetailed(reportData, config.formatOptions);
 
-    message = `${message}\n\n${reportUrl(config.reportName)}`;
+    message = `${message}\n${reportUrl(config.reportName)}`;
 
     // Generate charts silently (for web UI access, not for ntfy messages)
     if (!testMode) {

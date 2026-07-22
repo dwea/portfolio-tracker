@@ -10,8 +10,8 @@
       "format": "short"
     },
     {
-      "when": "weekdays-at-13",
-      "format": "short"
+      "when": "weekdays-at-14",
+      "format": "detailed"
     }
   ],
   "alertRecipients": [

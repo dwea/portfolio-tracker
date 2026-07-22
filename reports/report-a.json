@@ -14,10 +14,6 @@
       "format": "short"
     },
     {
-      "when": "weekdays-at-13",
-      "format": "detailed"
-    },
-    {
       "when": "weekdays-at-14",
       "format": "detailed"
     }
