@@ -348,9 +348,10 @@
       const { points, tickers, tickerEvents } = series;
       const marginLeft = 60, marginRight = 170, marginTop = 40, marginBottom = 60;
       const chartWidth = width - marginLeft - marginRight;
-      const chartHeight = height - marginTop - marginBottom;
       const formatAxisValue = (v) => mode === 'dollar' ? formatMoney(v, currency) : `${v.toFixed(1)}%`;
       const estimateTextWidth = (str) => str.length * 7.3;
+      const labelLineHeight = 13;
+      const rowCount = tickers.length + 1; // + Total
 
       let minValue = Infinity, maxValue = -Infinity;
       points.forEach(p => {
@@ -365,23 +366,67 @@
       const pad = valueRange * 0.15;
       const yMin = minValue - pad, yMax = maxValue + pad;
 
-      const valueToY = (v) => marginTop + chartHeight - ((v - yMin) / (yMax - yMin)) * chartHeight;
       const indexToX = (idx) => marginLeft + (points.length === 1 ? 0 : (idx / (points.length - 1)) * chartWidth);
       const colorFor = (ticker) => CHART_COLORS[tickers.indexOf(ticker) % CHART_COLORS.length];
 
-      const tickerSeries = tickers.map(ticker => {
-        const pts = [];
-        let lastValue = 0;
-        points.forEach((point, idx) => {
-          const h = point.holdingsValue.find(hh => hh.ticker === ticker);
-          if (h !== undefined) {
-            pts.push([indexToX(idx), valueToY(h.value)]);
-            lastValue = h.value;
+      // Everything Y-coordinate-dependent lives behind chartHeight, so it can be
+      // recomputed as chartHeight grows to fit the stacked labels (see the loop below).
+      const computeLayout = (chartHeight) => {
+        const valueToY = (v) => marginTop + chartHeight - ((v - yMin) / (yMax - yMin)) * chartHeight;
+
+        const tickerSeries = tickers.map(ticker => {
+          const pts = [];
+          let lastValue = 0;
+          points.forEach((point, idx) => {
+            const h = point.holdingsValue.find(hh => hh.ticker === ticker);
+            if (h !== undefined) {
+              pts.push([indexToX(idx), valueToY(h.value)]);
+              lastValue = h.value;
+            }
+          });
+          return pts.length ? { key: ticker, pts, color: colorFor(ticker), isTotal: false, lastValue,
+            endX: pts[pts.length - 1][0], endY: pts[pts.length - 1][1] } : null;
+        }).filter(Boolean);
+
+        const totalPts = points.map((point, idx) => [indexToX(idx), valueToY(point.totalValue)]);
+        const totalLastValue = points[points.length - 1].totalValue;
+        const totalSeries = { key: 'TOTAL', pts: totalPts, color: '#1a1a1a', isTotal: true, lastValue: totalLastValue,
+          endX: totalPts[totalPts.length - 1][0], endY: totalPts[totalPts.length - 1][1] };
+
+        const allSeriesRaw = [...tickerSeries, totalSeries];
+
+        // Total sits in the same stacked label column as every ticker, positioned as close
+        // as possible to its own line's last point without overlapping any other label.
+        const labelRows = allSeriesRaw.map(s => ({
+          key: s.key,
+          color: s.color,
+          isTotal: s.isTotal,
+          lastValue: s.lastValue,
+          endX: s.endX,
+          endY: s.endY,
+          labelY: s.endY + 4,
+        })).sort((a, b) => a.labelY - b.labelY);
+        for (let i = 0; i < labelRows.length; i++) {
+          for (let j = i + 1; j < labelRows.length; j++) {
+            if (labelRows[i].labelY + labelLineHeight > labelRows[j].labelY - 1) labelRows[j].labelY = labelRows[i].labelY + labelLineHeight + 1;
           }
-        });
-        return pts.length ? { key: ticker, pts, color: colorFor(ticker), isTotal: false, lastValue,
-          endX: pts[pts.length - 1][0], endY: pts[pts.length - 1][1] } : null;
-      }).filter(Boolean);
+        }
+
+        const maxLabelY = labelRows.length ? Math.max(...labelRows.map(r => r.labelY)) : marginTop;
+        return { valueToY, allSeriesRaw, labelRows, maxLabelY };
+      };
+
+      // Start from the requested height, then grow chartHeight until the stacked labels
+      // actually fit — the natural (pre-stacking) positions shift slightly as chartHeight
+      // changes, so this converges rather than being computed in one shot.
+      let chartHeight = Math.max(height - marginTop - marginBottom, rowCount * (labelLineHeight + 1) + 20);
+      let layout = computeLayout(chartHeight);
+      for (let attempt = 0; attempt < 5 && layout.maxLabelY > marginTop + chartHeight - 4; attempt++) {
+        chartHeight += (layout.maxLabelY - (marginTop + chartHeight)) + 8;
+        layout = computeLayout(chartHeight);
+      }
+      const { valueToY, allSeriesRaw, labelRows } = layout;
+      const finalHeight = chartHeight + marginTop + marginBottom;
 
       // Small red/green dots mark days a holding's share count changed (a sell or
       // buy) — so a value drop from selling reads as "I sold this" instead of a crash.
@@ -395,12 +440,6 @@
         }).filter(Boolean);
       });
 
-      const totalPts = points.map((point, idx) => [indexToX(idx), valueToY(point.totalValue)]);
-      const totalLastValue = points[points.length - 1].totalValue;
-      const totalSeries = { key: 'TOTAL', pts: totalPts, color: '#1a1a1a', isTotal: true, lastValue: totalLastValue,
-        endX: totalPts[totalPts.length - 1][0], endY: totalPts[totalPts.length - 1][1] };
-
-      const allSeriesRaw = [...tickerSeries, totalSeries];
       // Render order determines SVG stacking — hovered series renders last (on top).
       const allSeries = [...allSeriesRaw].sort((a, b) => {
         if (a.key === hovered) return 1;
@@ -408,22 +447,6 @@
         return 0;
       });
 
-      // Total sits in the same stacked label column as every ticker, positioned as close
-      // as possible to its own line's last point without overlapping any other label.
-      const labelRows = allSeriesRaw.map(s => ({
-        key: s.key,
-        color: s.color,
-        isTotal: s.isTotal,
-        lastValue: s.lastValue,
-        endX: s.endX,
-        endY: s.endY,
-        labelY: s.endY + 4,
-      })).sort((a, b) => a.labelY - b.labelY);
-      for (let i = 0; i < labelRows.length; i++) {
-        for (let j = i + 1; j < labelRows.length; j++) {
-          if (labelRows[i].labelY + 13 > labelRows[j].labelY - 1) labelRows[j].labelY = labelRows[i].labelY + 14;
-        }
-      }
       // Hovered row renders last (on top) so its pill/box never sits under a neighbor's.
       const orderedLabelRows = [...labelRows].sort((a, b) => (a.key === hovered ? 1 : b.key === hovered ? -1 : 0));
       const displayKey = (key) => key === 'TOTAL' ? 'Total' : key;
@@ -449,8 +472,8 @@
       };
 
       return (
-        <svg viewBox={`0 0 ${width} ${height}`} style={{width: '100%', height: 'auto', maxWidth: width}}>
-          <rect width={width} height={height} fill="white" />
+        <svg viewBox={`0 0 ${width} ${finalHeight}`} style={{width: '100%', height: 'auto', maxWidth: width}}>
+          <rect width={width} height={finalHeight} fill="white" />
           {[0, 1, 2, 3, 4, 5].map(i => (
             <line key={'g' + i} x1={marginLeft} y1={marginTop + (i / 5) * chartHeight} x2={width - marginRight} y2={marginTop + (i / 5) * chartHeight} stroke="#efefef" strokeWidth="1" />
           ))}

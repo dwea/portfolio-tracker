@@ -32,15 +32,25 @@ function generateChartSVG(
     return '<svg width="800" height="400"><text x="10" y="20">No data available</text></svg>';
   }
 
-  // Dimensions
+  // Get all unique tickers — Cash is excluded from the chart itself (it has no price,
+  // so its line would always sit flat at 0%, which just clutters the legend).
+  const allTickers = new Set<string>();
+  dataPoints.forEach((p) => p.holdings.forEach((h) => allTickers.add(h.ticker)));
+  allTickers.delete('Cash');
+  allTickers.delete('CASH');
+  const tickers = Array.from(allTickers);
+
+  // Dimensions — the plot grows taller when there are too many tickers (+ Total) for the
+  // default height to stack their labels without overlapping (settled below, once the
+  // label stacking is known).
   const width = 800;
-  const height = 400;
   const marginLeft = 60;
   const marginRight = 170; // Room for the value column + ticker/Total label column on the right
   const marginTop = 40;
   const marginBottom = 60;
+  const labelLineHeight = 13;
+  const rowCount = tickers.length + 1; // + Total
   const chartWidth = width - marginLeft - marginRight;
-  const chartHeight = height - marginTop - marginBottom;
 
   // Per ticker: a running $ growth series — each day adds (shares held going into
   // that day) * (that day's price change) — and a pure price-return % series
@@ -112,23 +122,11 @@ function generateChartSVG(
   const yMin = minPercent - padding;
   const yMax = maxPercent + padding;
 
-  // Helper: convert percentage to Y coordinate
-  const percentToY = (percent: number): number => {
-    return marginTop + chartHeight - ((percent - yMin) / (yMax - yMin)) * chartHeight;
-  };
-
-  // Helper: convert index to X coordinate
+  // Helper: convert index to X coordinate (independent of chartHeight, so it's stable
+  // across the height-fitting iteration below)
   const indexToX = (index: number): number => {
     return marginLeft + (index / (dataPoints.length - 1)) * chartWidth;
   };
-
-  // Get all unique tickers — Cash is excluded from the chart itself (it has no price,
-  // so its line would always sit flat at 0%, which just clutters the legend).
-  const allTickers = new Set<string>();
-  dataPoints.forEach((p) => p.holdings.forEach((h) => allTickers.add(h.ticker)));
-  allTickers.delete('Cash');
-  allTickers.delete('CASH');
-  const tickers = Array.from(allTickers);
 
   // Color palette for holdings
   const holdingColors: { [key: string]: string } = {};
@@ -139,6 +137,107 @@ function generateChartSVG(
   tickers.forEach((ticker, idx) => {
     holdingColors[ticker] = colors[idx % colors.length];
   });
+
+  interface LabelRow {
+    key: string;
+    endX: number;
+    endY: number;
+    value: number;
+    color: string;
+    isTotal: boolean;
+    labelY: number;
+  }
+
+  // Everything Y-coordinate-dependent lives behind chartHeight, so it can be recomputed
+  // as chartHeight grows to fit the stacked labels (see the fitting loop below).
+  function computeLayout(chartHeight: number) {
+    const percentToY = (percent: number): number =>
+      marginTop + chartHeight - ((percent - yMin) / (yMax - yMin)) * chartHeight;
+
+    const tickerLines: { ticker: string; points: string }[] = [];
+    const tickerEndPoints: { [key: string]: { x: number; y: number; value: number } } = {};
+    tickers.forEach((ticker) => {
+      const points: string[] = [];
+      let lastX = 0, lastY = 0, lastValue = 0;
+      percentChangePoints.forEach((point, idx) => {
+        const holding = point.holdingsPercent.find((h) => h.ticker === ticker);
+        if (holding !== undefined) {
+          const x = indexToX(idx);
+          const y = percentToY(holding.percentChange);
+          points.push(`${x},${y}`);
+          lastX = x;
+          lastY = y;
+          lastValue = holding.percentChange;
+        }
+      });
+      if (points.length > 0) {
+        tickerLines.push({ ticker, points: points.join(' ') });
+        tickerEndPoints[ticker] = { x: lastX, y: lastY, value: lastValue };
+      }
+    });
+
+    const accountPoints: string[] = [];
+    let accountLastX = 0, accountLastY = 0, accountLastPercent = 0;
+    percentChangePoints.forEach((point, idx) => {
+      const x = indexToX(idx);
+      const y = percentToY(point.accountTotalPercent);
+      accountPoints.push(`${x},${y}`);
+      accountLastX = x;
+      accountLastY = y;
+      accountLastPercent = point.accountTotalPercent;
+    });
+
+    // Unified right-column labels: Total sits in the same stacked column as every ticker,
+    // positioned as close as possible to its own line's last point without overlapping
+    // any other label.
+    const labelRows: LabelRow[] = tickers
+      .filter((ticker) => tickerEndPoints[ticker])
+      .map((ticker) => ({
+        key: ticker,
+        endX: tickerEndPoints[ticker].x,
+        endY: tickerEndPoints[ticker].y,
+        value: tickerEndPoints[ticker].value,
+        color: holdingColors[ticker],
+        isTotal: false,
+        labelY: tickerEndPoints[ticker].y + 4,
+      }));
+
+    labelRows.push({
+      key: 'Total',
+      endX: accountLastX,
+      endY: accountLastY,
+      value: accountLastPercent,
+      color: '#1a1a1a',
+      isTotal: true,
+      labelY: accountLastY + 4,
+    });
+
+    // Sort by natural Y and stack downward to resolve overlaps
+    labelRows.sort((a, b) => a.labelY - b.labelY);
+    for (let i = 0; i < labelRows.length; i++) {
+      for (let j = i + 1; j < labelRows.length; j++) {
+        if (labelRows[i].labelY + labelLineHeight > labelRows[j].labelY - 1) {
+          labelRows[j].labelY = labelRows[i].labelY + labelLineHeight + 1;
+        }
+      }
+    }
+
+    const maxLabelY = labelRows.length ? Math.max(...labelRows.map((r) => r.labelY)) : marginTop;
+
+    return { percentToY, tickerLines, accountPoints, labelRows, maxLabelY };
+  }
+
+  // Start from a reasonable guess, then grow chartHeight until the stacked labels
+  // actually fit — the natural (pre-stacking) positions shift slightly as chartHeight
+  // changes, so this converges rather than being computed in one shot.
+  let chartHeight = Math.max(300, rowCount * (labelLineHeight + 1) + 20);
+  let layout = computeLayout(chartHeight);
+  for (let attempt = 0; attempt < 5 && layout.maxLabelY > marginTop + chartHeight - 4; attempt++) {
+    chartHeight += (layout.maxLabelY - (marginTop + chartHeight)) + 8;
+    layout = computeLayout(chartHeight);
+  }
+  const { percentToY, tickerLines, accountPoints, labelRows } = layout;
+  const height = chartHeight + marginTop + marginBottom;
 
   let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
 
@@ -163,93 +262,16 @@ function generateChartSVG(
     svg += `<text x="${marginLeft - 10}" y="${y + 4}" text-anchor="end" font-size="11" fill="#666">${label}</text>`;
   }
 
-  // Draw holding lines (thin, subtle) and track end points + last value for labels
-  const tickerEndPoints: { [key: string]: { x: number; y: number; value: number } } = {};
-  tickers.forEach((ticker) => {
-    const points: string[] = [];
-    let lastX = 0;
-    let lastY = 0;
-    let lastValue = 0;
-    percentChangePoints.forEach((point, idx) => {
-      const holding = point.holdingsPercent.find((h) => h.ticker === ticker);
-      if (holding !== undefined) {
-        const x = indexToX(idx);
-        const y = percentToY(holding.percentChange);
-        points.push(`${x},${y}`);
-        lastX = x;
-        lastY = y;
-        lastValue = holding.percentChange;
-      }
-    });
-
-    if (points.length > 0) {
-      svg += `<polyline points="${points.join(' ')}" fill="none" stroke="${holdingColors[ticker]}" stroke-width="1.5" opacity="0.5"/>`;
-      tickerEndPoints[ticker] = { x: lastX, y: lastY, value: lastValue };
-    }
+  // Draw holding lines (thin, subtle)
+  tickerLines.forEach(({ ticker, points }) => {
+    svg += `<polyline points="${points}" fill="none" stroke="${holdingColors[ticker]}" stroke-width="1.5" opacity="0.5"/>`;
   });
 
   // Draw main account total line (thick, dark)
-  const accountPoints: string[] = [];
-  let accountLastX = 0;
-  let accountLastY = 0;
-  let accountLastPercent = 0;
-  percentChangePoints.forEach((point, idx) => {
-    const x = indexToX(idx);
-    const y = percentToY(point.accountTotalPercent);
-    accountPoints.push(`${x},${y}`);
-    accountLastX = x;
-    accountLastY = y;
-    accountLastPercent = point.accountTotalPercent;
-  });
   svg += `<polyline points="${accountPoints.join(' ')}" fill="none" stroke="#1a1a1a" stroke-width="2.5"/>`;
 
-  // Unified right-column labels: Total sits in the same stacked column as every ticker,
-  // positioned as close as possible to its own line's last point without overlapping
-  // any other label. Each row shows "value  label", the value right-aligned so it grows
-  // leftward (away from the label) as it gets longer, rather than colliding with it.
-  interface LabelRow {
-    key: string;
-    endX: number;
-    endY: number;
-    value: number;
-    color: string;
-    isTotal: boolean;
-    labelY: number;
-  }
-
-  const labelRows: LabelRow[] = tickers
-    .filter((ticker) => tickerEndPoints[ticker])
-    .map((ticker) => ({
-      key: ticker,
-      endX: tickerEndPoints[ticker].x,
-      endY: tickerEndPoints[ticker].y,
-      value: tickerEndPoints[ticker].value,
-      color: holdingColors[ticker],
-      isTotal: false,
-      labelY: tickerEndPoints[ticker].y + 4,
-    }));
-
-  labelRows.push({
-    key: 'Total',
-    endX: accountLastX,
-    endY: accountLastY,
-    value: accountLastPercent,
-    color: '#1a1a1a',
-    isTotal: true,
-    labelY: accountLastY + 4,
-  });
-
-  // Sort by natural Y and stack downward to resolve overlaps
-  labelRows.sort((a, b) => a.labelY - b.labelY);
-  const labelLineHeight = 13;
-  for (let i = 0; i < labelRows.length; i++) {
-    for (let j = i + 1; j < labelRows.length; j++) {
-      if (labelRows[i].labelY + labelLineHeight > labelRows[j].labelY - 1) {
-        labelRows[j].labelY = labelRows[i].labelY + labelLineHeight + 1;
-      }
-    }
-  }
-
+  // Each label row shows "value  label", the value right-aligned so it grows leftward
+  // (away from the label) as it gets longer, rather than colliding with it.
   const estimateTextWidth = (str: string): number => str.length * 6.5;
   const formatRowValue = (v: number): string => `${v.toFixed(1)}%`;
   const valueColWidth = Math.max(...labelRows.map((r) => estimateTextWidth(formatRowValue(r.value))));
