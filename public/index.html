@@ -1434,16 +1434,6 @@
             {config && <span style={{fontSize: '0.75rem', color: '#888'}}>{config.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.json</span>}
           </div>
           <div className="top-bar-actions">
-            {savedReports.length > 0 && (
-              <select
-                value={currentFilename || ''}
-                onChange={(e) => e.target.value && loadFromServer(e.target.value)}
-                style={{fontSize: '0.75rem'}}
-              >
-                <option value="">Switch report…</option>
-                {savedReports.map(f => <option key={f} value={f}>{f.replace('.json', '')}</option>)}
-              </select>
-            )}
             <button className="btn btn-secondary" onClick={newConfig}>New</button>
             <button className="btn btn-secondary" onClick={loadJSON}>Open</button>
             {config && <button className="btn btn-secondary" title="Refresh prices &amp; rebalance data" onClick={() => { setRebalanceState({}); config.accounts.forEach((_, i) => analyzeRebalance(i)); }}>↻ Refresh</button>}
@@ -1478,14 +1468,12 @@
                       const isPreviewing = quickPreviewingFile === f || (chartsLoading && chartsFile === f);
                       return (
                         <div key={f} style={{display: 'flex', gap: '0.4rem', alignItems: 'center', height: '2.2rem'}}>
-                          <div style={{width: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '0.85rem', fontWeight: 600}}>
-                            {f.replace('.json', '')}
-                          </div>
+                          <button className="btn btn-secondary btn-preview-tall" style={{width: '200px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 600}} onClick={() => loadFromServer(f)} title="Edit this report">
+                            <span>{f.replace('.json', '')}</span>
+                            <span aria-hidden="true">✏️</span>
+                          </button>
                           <button className="btn btn-primary btn-preview-tall" onClick={() => { quickPreviewReport(f); loadCharts(f); }} disabled={isPreviewing} title="Preview this report (summary + charts)">
                             {isPreviewing ? 'Fetching…' : 'Preview'}
-                          </button>
-                          <button className="btn btn-secondary btn-preview-tall" onClick={() => loadFromServer(f)} title="Edit this report">
-                            Edit
                           </button>
                         </div>
                       );
@@ -1597,10 +1585,6 @@
                       )}
                     </div>
                   )}
-                  <div style={{marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center'}}>
-                    <button className="btn btn-primary" onClick={newConfig}>New Report</button>
-                    <button className="btn btn-secondary" onClick={loadJSON}>Open JSON file</button>
-                  </div>
                 </div>
               ) : (
                 <div>
