@@ -1485,7 +1485,7 @@
         <div className="top-bar">
           <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem'}}>
             {config && <button className="btn btn-secondary" title="Back to portfolio list" onClick={() => { if (!isDirty || confirm('You have unsaved changes. Go back without saving?')) { setConfig(null); setCurrentFilename(null); setIsDirty(false); setEditorTab('portfolio'); } }}>🏠</button>}
-            <h1>Portfolios</h1>
+            {!config && <h1>Portfolios</h1>}
             {config && (
               isRenamingReport ? (
                 <span style={{display: 'flex', alignItems: 'center', gap: '0.3rem'}}>
@@ -1495,15 +1495,15 @@
                     autoFocus
                     onChange={(e) => setRenameValue(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') cancelRename(); }}
-                    style={{fontSize: '0.75rem', padding: '0.2rem 0.4rem', width: '160px'}}
+                    style={{fontSize: '1.4rem', fontWeight: 700, padding: '0.2rem 0.4rem', width: '260px'}}
                   />
                   <button className="btn btn-primary btn-sm" onClick={submitRename} title="Save name">✓</button>
                   <button className="btn btn-secondary btn-sm" onClick={cancelRename} title="Cancel">✕</button>
                 </span>
               ) : (
-                <span style={{fontSize: '0.75rem', color: '#888', display: 'flex', alignItems: 'center', gap: '0.3rem'}}>
-                  {config.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.json
-                  <span style={{cursor: 'pointer'}} onClick={startRename} title="Rename this report">✏️</span>
+                <span style={{fontSize: '1.4rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem'}}>
+                  {config.reportName}
+                  <span style={{cursor: 'pointer', fontSize: '1rem'}} onClick={startRename} title="Rename this report">✏️</span>
                 </span>
               )
             )}
@@ -1542,9 +1542,8 @@
                       const isReportLoading = quickPreviewingFile === f;
                       return (
                         <div key={f} style={{display: 'flex', gap: '0.4rem', alignItems: 'center', padding: '1.1rem 0', width: '460px', justifyContent: 'center', borderBottom: idx !== savedReports.length - 1 ? '1px solid #eee' : 'none'}}>
-                          <button style={{width: '200px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit', fontSize: '1.4rem', fontWeight: 700, background: 'none', border: 'none', padding: '0.5rem 0.2rem', cursor: 'pointer'}} onClick={() => loadFromServer(f)} title="Edit this report">
+                          <button style={{width: '200px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', fontFamily: 'inherit', fontSize: '1.4rem', fontWeight: 700, background: 'none', border: 'none', padding: '0.5rem 0.2rem', cursor: 'pointer'}} onClick={() => loadFromServer(f)} title="Edit this report">
                             <span>{f.replace('.json', '')}</span>
-                            <span aria-hidden="true">✏️</span>
                           </button>
                           <button className="btn btn-secondary btn-preview-tall" style={{display: 'flex', alignItems: 'center', gap: '0.35rem'}} onClick={() => loadCharts(f)} disabled={isChartsLoading} title="View charts for this report">
                             <svg width="19" height="19" viewBox="0 0 16 16" fill="none" aria-hidden="true"><polyline points="1,13 5,8 8,10 15,2" stroke="#333" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -1697,7 +1696,7 @@
               <button className={`editor-tab-btn${editorTab === 'portfolio' ? ' active' : ''}`} onClick={() => setEditorTab('portfolio')}>Holdings</button>
               <button className={`editor-tab-btn${editorTab === 'strategy' ? ' active' : ''}`} onClick={() => setEditorTab('strategy')}>Strategy</button>
               <button className={`editor-tab-btn${editorTab === 'schedule' ? ' active' : ''}`} onClick={() => setEditorTab('schedule')}>Schedule</button>
-              <button className={`editor-tab-btn${editorTab === 'preview' ? ' active' : ''}`} onClick={() => setEditorTab('preview')}>Preview</button>
+              <button className={`editor-tab-btn${editorTab === 'preview' ? ' active' : ''}`} onClick={() => setEditorTab('preview')}>Report Setup</button>
             </div>
           </div>
 
