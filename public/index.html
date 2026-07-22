@@ -1458,7 +1458,8 @@
       // ── TOP BAR (always visible) ─────────────────────────────────────
       const topBar = (
         <div className="top-bar">
-          <div style={{display: 'flex', alignItems: 'baseline', gap: '0.6rem'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem'}}>
+            {config && <button className="btn btn-secondary" title="Back to portfolio list" onClick={() => { if (!isDirty || confirm('You have unsaved changes. Go back without saving?')) { setConfig(null); setCurrentFilename(null); setIsDirty(false); setEditorTab('portfolio'); } }}>🏠</button>}
             <h1>Portfolio Config Editor</h1>
             {config && (
               isRenamingReport ? (
@@ -1483,11 +1484,10 @@
             )}
           </div>
           <div className="top-bar-actions">
-            <button className="btn btn-secondary" onClick={newConfig}>New</button>
-            <button className="btn btn-secondary" onClick={loadJSON}>Open</button>
+            {!config && <button className="btn btn-secondary" onClick={newConfig}>New</button>}
+            {!config && <button className="btn btn-secondary" onClick={loadJSON}>Open</button>}
             {config && <button className="btn btn-secondary" title="Refresh prices &amp; rebalance data" onClick={() => { setRebalanceState({}); config.accounts.forEach((_, i) => analyzeRebalance(i)); }}>↻ Refresh</button>}
             {config && <button className="btn btn-primary" onClick={() => saveJSON()} style={isDirty ? {background: '#d97706', borderColor: '#d97706'} : {}}>{isDirty ? 'Save *' : 'Save'}</button>}
-            {config && <button className="btn btn-secondary" title="Back to portfolio list" onClick={() => { if (!isDirty || confirm('You have unsaved changes. Go back without saving?')) { setConfig(null); setCurrentFilename(null); setIsDirty(false); setEditorTab('portfolio'); } }}>⌂ Home</button>}
             {saveToast && <span style={{fontSize: '0.75rem', color: '#16a34a', fontWeight: 500}}>{saveToast}</span>}
           </div>
         </div>
@@ -1749,7 +1749,7 @@
                     const rs = rebalanceState[accIdx];
                     const sym = account.currency === 'USD' ? '$' : 'C$';
                     if (rs?.loading && rs?.accountTotal == null) return <span style={{fontSize: '0.7rem', color: '#aaa'}}>…</span>;
-                    if (rs?.accountTotal != null) return <span style={{fontSize: '0.72rem', color: '#555', fontWeight: 400}}>{sym}{Math.round(rs.accountTotal).toLocaleString('en-CA')}</span>;
+                    if (rs?.accountTotal != null) return <span style={{fontSize: '0.85rem', color: '#111', fontWeight: 400}}>{sym}{Math.round(rs.accountTotal).toLocaleString('en-CA')}</span>;
                     return null;
                   })()}
                   <div style={{display: 'flex', gap: '0.25rem', alignItems: 'center'}}>
