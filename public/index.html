@@ -1485,7 +1485,7 @@
         <div className="top-bar">
           <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem'}}>
             {config && <button className="btn btn-secondary" title="Back to portfolio list" onClick={() => { if (!isDirty || confirm('You have unsaved changes. Go back without saving?')) { setConfig(null); setCurrentFilename(null); setIsDirty(false); setEditorTab('portfolio'); } }}>🏠</button>}
-            <h1>Portfolio Config Editor</h1>
+            <h1>Portfolios</h1>
             {config && (
               isRenamingReport ? (
                 <span style={{display: 'flex', alignItems: 'center', gap: '0.3rem'}}>
@@ -1536,20 +1536,19 @@
                 </div>
               ) : savedReports.length > 0 ? (
                 <div>
-                  <p style={{marginBottom: '0.75rem'}}>Select a report to edit or preview:</p>
                   <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
                     {savedReports.map((f, idx) => {
                       const isChartsLoading = chartsLoading && chartsFile === f;
                       const isReportLoading = quickPreviewingFile === f;
                       return (
-                        <div key={f} style={{display: 'flex', gap: '0.4rem', alignItems: 'center', height: '2.2rem', padding: '0.4rem 0', width: '460px', justifyContent: 'center', borderBottom: idx !== savedReports.length - 1 ? '1px solid #eee' : 'none'}}>
-                          <button style={{width: '200px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 600, background: 'none', border: 'none', padding: '0.5rem 0.2rem', cursor: 'pointer', font: 'inherit'}} onClick={() => loadFromServer(f)} title="Edit this report">
+                        <div key={f} style={{display: 'flex', gap: '0.4rem', alignItems: 'center', padding: '1.1rem 0', width: '460px', justifyContent: 'center', borderBottom: idx !== savedReports.length - 1 ? '1px solid #eee' : 'none'}}>
+                          <button style={{width: '200px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit', fontSize: '1.4rem', fontWeight: 700, background: 'none', border: 'none', padding: '0.5rem 0.2rem', cursor: 'pointer'}} onClick={() => loadFromServer(f)} title="Edit this report">
                             <span>{f.replace('.json', '')}</span>
                             <span aria-hidden="true">✏️</span>
                           </button>
                           <button className="btn btn-secondary btn-preview-tall" style={{display: 'flex', alignItems: 'center', gap: '0.35rem'}} onClick={() => loadCharts(f)} disabled={isChartsLoading} title="View charts for this report">
                             <svg width="19" height="19" viewBox="0 0 16 16" fill="none" aria-hidden="true"><polyline points="1,13 5,8 8,10 15,2" stroke="#333" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            {isChartsLoading ? 'Fetching…' : 'Charts'}
+                            <span style={{opacity: 0.55}}>{isChartsLoading ? 'Fetching…' : 'Charts'}</span>
                           </button>
                           <button className="btn btn-secondary btn-preview-tall" style={{display: 'flex', alignItems: 'center', gap: '0.35rem'}} onClick={() => quickPreviewReport(f)} disabled={isReportLoading} title="Preview this report's SMS text">
                             <svg width="19" height="19" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -1560,7 +1559,7 @@
                               <circle cx="2" cy="13" r="1.6" fill="#22c55e"/>
                               <rect x="6" y="12.2" width="9" height="1.6" rx="0.8" fill="#333"/>
                             </svg>
-                            {isReportLoading ? 'Fetching…' : 'Report'}
+                            <span style={{opacity: 0.55}}>{isReportLoading ? 'Fetching…' : 'Report'}</span>
                           </button>
                         </div>
                       );
