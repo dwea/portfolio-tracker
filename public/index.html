@@ -1208,6 +1208,7 @@
       };
 
       const loadCharts = async (filename, days = chartsDays) => {
+        setQuickPreviewResult(null);
         setChartsFile(filename);
         setChartsDays(days);
         setChartData([]);
