@@ -1474,19 +1474,22 @@
                 <div>
                   <p style={{marginBottom: '0.75rem'}}>Select a report to edit:</p>
                   <div style={{display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'center'}}>
-                    {savedReports.map(f => (
-                      <div key={f} style={{display: 'flex', gap: '0.3rem', alignItems: 'center'}}>
-                        <button className="btn btn-secondary" style={{width: '200px'}} onClick={() => loadFromServer(f)}>
-                          {f.replace('.json', '')}
-                        </button>
-                        <button className="btn btn-primary btn-preview-tall" onClick={() => quickPreviewReport(f)} disabled={quickPreviewingFile === f} title="Preview this report">
-                          {quickPreviewingFile === f ? 'Fetching…' : 'Preview'}
-                        </button>
-                        <button className="btn btn-primary btn-preview-tall" onClick={() => loadCharts(f)} disabled={chartsLoading && chartsFile === f} title="View performance charts">
-                          {chartsLoading && chartsFile === f ? 'Loading…' : 'Charts'}
-                        </button>
-                      </div>
-                    ))}
+                    {savedReports.map(f => {
+                      const isPreviewing = quickPreviewingFile === f || (chartsLoading && chartsFile === f);
+                      return (
+                        <div key={f} style={{display: 'flex', gap: '0.4rem', alignItems: 'center', height: '2.2rem'}}>
+                          <div style={{width: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '0.85rem', fontWeight: 600}}>
+                            {f.replace('.json', '')}
+                          </div>
+                          <button className="btn btn-primary btn-preview-tall" onClick={() => { quickPreviewReport(f); loadCharts(f); }} disabled={isPreviewing} title="Preview this report (summary + charts)">
+                            {isPreviewing ? 'Fetching…' : 'Preview'}
+                          </button>
+                          <button className="btn btn-secondary btn-preview-tall" onClick={() => loadFromServer(f)} title="Edit this report">
+                            Edit
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                   {quickPreviewResult && (
                     <div style={{marginTop: '1.25rem', textAlign: 'left', maxWidth: '420px', margin: '1.25rem auto 0'}}>
