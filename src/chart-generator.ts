@@ -26,7 +26,8 @@ function escapeXml(str: string): string {
 function generateChartSVG(
   accountName: string,
   dataPoints: ChartDataPoint[],
-  currency: string
+  currency: string,
+  days: number
 ): string {
   if (dataPoints.length === 0) {
     return '<svg width="800" height="400"><text x="10" y="20">No data available</text></svg>';
@@ -315,7 +316,8 @@ function generateChartSVG(
   svg += `<line x1="${marginLeft}" y1="${marginTop}" x2="${marginLeft}" y2="${marginTop + chartHeight}" stroke="#333" stroke-width="1"/>`;
 
   // Title
-  svg += `<text x="${width / 2}" y="25" text-anchor="middle" font-size="16" font-weight="bold">${accountName} — % Change from Price, Since Earliest Data</text>`;
+  const periodLabel = `Past ${days} Days`;
+  svg += `<text x="${width / 2}" y="25" text-anchor="middle" font-size="16" font-weight="bold">${accountName} — % Change from Price, ${periodLabel}</text>`;
 
   svg += '</svg>';
   return svg;
@@ -357,7 +359,7 @@ export async function generateAccountChart(
     }));
 
     // Generate SVG
-    const svg = generateChartSVG(accountName, dataPoints, accountCurrency === 'CAD' ? 'C$' : '$');
+    const svg = generateChartSVG(accountName, dataPoints, accountCurrency === 'CAD' ? 'C$' : '$', days);
 
     // Convert SVG to PNG
     const buffer = await sharp(Buffer.from(svg)).png().toBuffer();

@@ -335,7 +335,7 @@
 
     // Inline SVG performance chart. Hovering a line (or its label) brings it to full
     // opacity and the top render layer, subduing every other line to 60% opacity.
-    function InteractiveChart({ name, currency, history, mode = 'percent', width = 800, height = 400 }) {
+    function InteractiveChart({ name, currency, history, mode = 'percent', width = 800, height = 400, days = 'all' }) {
       const [hovered, setHovered] = useState(null); // ticker string, 'TOTAL', or null
       const [hoveredDot, setHoveredDot] = useState(null); // { ticker, idx } of a hovered buy/sell dot, or null
 
@@ -349,6 +349,7 @@
       const marginLeft = 60, marginRight = 170, marginTop = 40, marginBottom = 60;
       const chartWidth = width - marginLeft - marginRight;
       const formatAxisValue = (v) => mode === 'dollar' ? formatMoney(v, currency) : `${v.toFixed(1)}%`;
+      const periodLabel = String(days) === 'all' ? 'Since Earliest Data' : `Past ${days} Days`;
       const estimateTextWidth = (str) => str.length * 7.3;
       const labelLineHeight = 13;
       const rowCount = tickers.length + 1; // + Total
@@ -535,7 +536,7 @@
             return <text key={'xl' + idx} x={indexToX(idx)} y={marginTop + chartHeight + 20} textAnchor="middle" fontSize="11" fill="#666">{point.date.substring(5)}</text>;
           })}
           <line x1={marginLeft} y1={marginTop} x2={marginLeft} y2={marginTop + chartHeight} stroke="#333" strokeWidth="1" />
-          <text x={width / 2} y={25} textAnchor="middle" fontSize="16" fontWeight="bold">{name} — {mode === 'dollar' ? '$ Growth' : '% Change'} from Price, Since Earliest Data</text>
+          <text x={width / 2} y={25} textAnchor="middle" fontSize="16" fontWeight="bold">{name} — {mode === 'dollar' ? '$ Growth' : '% Change'} from Price, {periodLabel}</text>
 
           {hoveredDot && (() => {
             const d = tradeDots.find(dot => dot.ticker === hoveredDot.ticker && dot.idx === hoveredDot.idx);
@@ -588,6 +589,8 @@
       const [savedReports, setSavedReports] = useState([]);
       const [currentFilename, setCurrentFilename] = useState(null);
       const [saveToast, setSaveToast] = useState(null); // null | message string
+      const [renamingFile, setRenamingFile] = useState(null); // filename currently being renamed inline
+      const [renameValue, setRenameValue] = useState('');
       const [strategyState, setStrategyState] = useState(null);       // null|{loading}|{data}|{error}
       const [strategyApproved, setStrategyApproved] = useState(false); // true = user has reviewed summary and wants to see targets
       const [strategyEdits, setStrategyEdits] = useState({});         // { [acctName]: { targets: {[ticker]:number}, cash: number|null } }
@@ -865,6 +868,48 @@
           setIsDirty(false);
         } catch (err) {
           alert('Failed to load report');
+        }
+      };
+
+      const startRename = (filename, currentName) => {
+        setRenamingFile(filename);
+        setRenameValue(currentName);
+      };
+
+      const cancelRename = () => {
+        setRenamingFile(null);
+        setRenameValue('');
+      };
+
+      const submitRename = async (filename) => {
+        const newName = renameValue.trim();
+        if (!newName) { cancelRename(); return; }
+        const newFilename = newName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.json';
+        if (newFilename !== filename && savedReports.includes(newFilename)) {
+          alert(`A report named "${newName}" already exists.`);
+          return;
+        }
+        try {
+          const resp = await fetch(`/api/reports/${filename}`);
+          if (!resp.ok) throw new Error('Could not load report');
+          const reportDef = await resp.json();
+          if (newFilename === filename && reportDef.reportName === newName) { cancelRename(); return; }
+          reportDef.reportName = newName;
+          const url = newFilename === filename
+            ? `/api/reports/${filename}`
+            : `/api/reports/${newFilename}?oldFilename=${encodeURIComponent(filename)}`;
+          const saveResp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reportDef)
+          });
+          if (!saveResp.ok) throw new Error('Rename failed');
+          if (newFilename !== filename) {
+            setSavedReports(prev => prev.map(f => f === filename ? newFilename : f));
+          }
+          cancelRename();
+        } catch (err) {
+          alert('Rename failed: ' + err.message);
         }
       };
 
@@ -1466,12 +1511,28 @@
                   <div style={{display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'center'}}>
                     {savedReports.map(f => {
                       const isPreviewing = quickPreviewingFile === f || (chartsLoading && chartsFile === f);
+                      const isRenaming = renamingFile === f;
                       return (
                         <div key={f} style={{display: 'flex', gap: '0.4rem', alignItems: 'center', height: '2.2rem'}}>
-                          <button className="btn btn-secondary btn-preview-tall" style={{width: '200px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 600}} onClick={() => loadFromServer(f)} title="Edit this report">
-                            <span>{f.replace('.json', '')}</span>
-                            <span aria-hidden="true">✏️</span>
-                          </button>
+                          {isRenaming ? (
+                            <div style={{width: '200px', display: 'flex', alignItems: 'center', gap: '0.3rem'}}>
+                              <input
+                                type="text"
+                                value={renameValue}
+                                autoFocus
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') submitRename(f); if (e.key === 'Escape') cancelRename(); }}
+                                style={{width: '100%', fontSize: '0.8rem', padding: '0.3rem'}}
+                              />
+                              <button className="btn btn-primary btn-sm" onClick={() => submitRename(f)} title="Save name">✓</button>
+                              <button className="btn btn-secondary btn-sm" onClick={cancelRename} title="Cancel">✕</button>
+                            </div>
+                          ) : (
+                            <div className="btn btn-secondary btn-preview-tall" style={{width: '200px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 600, padding: 0}}>
+                              <span style={{flex: 1, textAlign: 'left', padding: '0.5rem 0 0.5rem 0.8rem', cursor: 'pointer'}} onClick={() => loadFromServer(f)} title="Edit this report">{f.replace('.json', '')}</span>
+                              <span style={{padding: '0.5rem 0.6rem', cursor: 'pointer'}} onClick={() => startRename(f, f.replace('.json', ''))} title="Rename this report">✏️</span>
+                            </div>
+                          )}
                           <button className="btn btn-primary btn-preview-tall" onClick={() => { quickPreviewReport(f); loadCharts(f); }} disabled={isPreviewing} title="Preview this report (summary + charts)">
                             {isPreviewing ? 'Fetching…' : 'Preview'}
                           </button>
@@ -1541,7 +1602,7 @@
                             {chartData.map((chart) => (
                               <div key={chart.name} style={{position: 'relative', width: '100%', maxWidth: '800px', border: '1px solid #ddd', borderRadius: '4px', padding: '0.5rem'}}>
                                 <button onClick={() => setFullscreenChart(chart)} title="Expand fullscreen" style={{position: 'absolute', top: '0.6rem', right: '0.6rem', zIndex: 1, background: '#fff', border: '1px solid #ddd', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#666'}}>⛶</button>
-                                <InteractiveChart name={chart.name} currency={chart.currency} history={chart.history} mode={chartsMode} />
+                                <InteractiveChart name={chart.name} currency={chart.currency} history={chart.history} mode={chartsMode} days={chartsDays} />
                               </div>
                             ))}
                           </div>
@@ -1579,7 +1640,7 @@
                             ))}
                           </div>
                           <div style={{background: '#fff', borderRadius: '4px', padding: '1rem', width: 'min(1150px, 95vw)'}}>
-                            <InteractiveChart name={fullscreenChart.name} currency={fullscreenChart.currency} history={fullscreenChart.history} mode={chartsMode} width={1100} height={fullscreenChartHeight} />
+                            <InteractiveChart name={fullscreenChart.name} currency={fullscreenChart.currency} history={fullscreenChart.history} mode={chartsMode} days={chartsDays} width={1100} height={fullscreenChartHeight} />
                           </div>
                         </div>
                       )}
