@@ -300,12 +300,14 @@ function generateChartSVG(
 
     // Value: right-aligned, white backing box so longer numbers never collide with the label.
     const valueStr = formatRowValue(row.value);
-    const valueColor = row.value >= 0 ? '#1a1a1a' : '#dc2626';
+    const valueColor = row.value >= 0 ? '#16a34a' : '#b91c1c';
     svg += `<rect x="${valueRightX - valueColWidth - 4}" y="${row.labelY - 9}" width="${valueColWidth + 8}" height="16" fill="white"/>`;
     svg += `<text x="${valueRightX}" y="${row.labelY}" text-anchor="end" font-size="10" font-family="Arial, Helvetica, sans-serif" fill="${valueColor}">${valueStr}</text>`;
 
-    // Label: left-aligned, starting a fixed gap after the value column.
-    svg += `<text x="${labelLeftX}" y="${row.labelY}" font-size="11" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="${row.color}" opacity="${row.isTotal ? 1 : 0.85}">${escapedKey}</text>`;
+    // Label: left-aligned, starting a fixed gap after the value column. All tickers
+    // share one dark grey so the label list doesn't compete with the line colors.
+    const labelColor = row.isTotal ? '#1a1a1a' : '#4b5563';
+    svg += `<text x="${labelLeftX}" y="${row.labelY}" font-size="11" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="${labelColor}" opacity="${row.isTotal ? 1 : 0.85}">${escapedKey}</text>`;
   });
 
   // X-axis

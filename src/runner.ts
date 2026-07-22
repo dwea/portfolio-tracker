@@ -13,6 +13,15 @@ import { generateAccountChart } from './chart-generator.js';
 // Load environment variables from .env file
 dotenvConfig();
 
+const SITE_BASE_URL = 'https://dwhy.uk';
+
+// Mirrors the filename-derivation the editor uses to keep a report's file in sync
+// with its display name, so a link built from reportName always resolves.
+function reportUrl(reportName: string): string {
+  const filename = reportName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.json';
+  return `${SITE_BASE_URL}/?report=${filename}`;
+}
+
 // Legacy presets for backward compatibility
 const LEGACY_SCHEDULE_TIMES: Record<string, { days: number[]; hour: number; minute: number }> = {
   'weekdays-at-9am': { days: [1, 2, 3, 4, 5], hour: 9, minute: 0 },
@@ -166,6 +175,8 @@ async function generateAndSendReport(config: Report, schedule: Schedule, testMod
         : format === 'rebalance'
           ? formatRebalanceReport(reportData, config.formatOptions)
           : formatDetailed(reportData, config.formatOptions);
+
+    message = `${message}\n\n${reportUrl(config.reportName)}`;
 
     // Generate charts silently (for web UI access, not for ntfy messages)
     if (!testMode) {

@@ -337,7 +337,6 @@
     // opacity and the top render layer, subduing every other line to 60% opacity.
     function InteractiveChart({ name, currency, history, mode = 'percent', width = 800, height = 400, days = 'all' }) {
       const [hovered, setHovered] = useState(null); // ticker string, 'TOTAL', or null
-      const [hoveredDot, setHoveredDot] = useState(null); // { ticker, idx } of a hovered buy/sell dot, or null
 
       const series = React.useMemo(() => buildChartSeries(history, mode), [history, mode]);
 
@@ -467,6 +466,15 @@
         if (!hovered) return isTotal ? 1 : 0.6;
         return hovered === key ? 1 : 0.6;
       };
+      // Value text/background stay fully saturated at rest — only dimmed when a
+      // different row is actively hovered — so the red/green reads clearly by default.
+      const valueOpacityFor = (key) => (!hovered || hovered === key) ? 1 : 0.5;
+      // Lines (and their trade dots) fade to nearly invisible once something else is
+      // hovered, so the hovered line stands out clearly instead of competing with bold neighbors.
+      const lineOpacityFor = (key, isTotal) => {
+        if (!hovered) return isTotal ? 1 : 0.6;
+        return hovered === key ? 1 : 0.1;
+      };
       const widthFor = (key, isTotal) => {
         const base = isTotal ? 2.5 : 1.5;
         return hovered === key ? base + 1 : base;
@@ -496,16 +504,16 @@
           {allSeries.map(s => (
             <g key={s.key} onMouseEnter={() => setHovered(s.key)} onMouseLeave={() => setHovered(null)} style={{cursor: 'pointer'}}>
               <polyline points={s.pts.map(p => p.join(',')).join(' ')} fill="none" stroke="transparent" strokeWidth="14" />
-              <polyline points={s.pts.map(p => p.join(',')).join(' ')} fill="none" stroke={hovered === s.key ? '#000' : s.color} strokeWidth={widthFor(s.key, s.isTotal)} opacity={opacityFor(s.key, s.isTotal)} />
+              <polyline points={s.pts.map(p => p.join(',')).join(' ')} fill="none" stroke={hovered === s.key ? '#000' : s.color} strokeWidth={widthFor(s.key, s.isTotal)} opacity={lineOpacityFor(s.key, s.isTotal)} />
             </g>
           ))}
 
           {tradeDots.map((d, i) => (
             <circle key={'dot' + d.ticker + i} cx={d.x} cy={d.y} r={hovered === d.ticker ? 10 : 7}
                     fill={d.type === 'sell' ? '#dc2626' : '#16a34a'} stroke="white" strokeWidth="1"
-                    opacity={opacityFor(d.ticker, false)} style={{cursor: 'pointer'}}
-                    onMouseEnter={() => { setHovered(d.ticker); setHoveredDot({ ticker: d.ticker, idx: d.idx }); }}
-                    onMouseLeave={() => { setHovered(null); setHoveredDot(null); }}>
+                    opacity={lineOpacityFor(d.ticker, false)} style={{cursor: 'pointer'}}
+                    onMouseEnter={() => setHovered(d.ticker)}
+                    onMouseLeave={() => setHovered(null)}>
               <title>{`${d.ticker}: ${d.type === 'sell' ? 'shares sold' : 'shares bought'}`}</title>
             </circle>
           ))}
@@ -514,22 +522,22 @@
             const isHovered = hovered === row.key;
             const movedDistance = Math.abs(row.labelY - (row.endY + 4));
             const valueStr = formatAxisValue(row.lastValue);
-            const valueColor = row.lastValue >= 0 ? '#1a1a1a' : '#dc2626';
+            const valueColor = row.lastValue >= 0 ? '#16a34a' : '#b91c1c';
             const pillColor = row.lastValue >= 0 ? '#dcfce7' : '#fee2e2'; // light green / light red
             const labelWidth = estimateTextWidth(displayKey(row.key));
             return (
               <g key={'row' + row.key}>
-                {movedDistance > 6 && (
-                  <line x1={row.endX} y1={row.endY} x2={labelLeftX - 4} y2={row.labelY - 5} stroke={row.color} strokeWidth="0.5" opacity="0.3" />
+                {isHovered && movedDistance > 6 && (
+                  <line x1={row.endX} y1={row.endY} x2={valueRightX - valueColWidth - 4} y2={row.labelY - 5} stroke={row.color} strokeWidth="0.5" opacity="0.3" />
                 )}
-                <rect x={valueRightX - valueColWidth - 4} y={row.labelY - 9} width={valueColWidth + 8} height="16" fill="white" opacity={opacityFor(row.key, row.isTotal)} />
-                <text x={valueRightX} y={row.labelY} textAnchor="end" fontSize="10" fontFamily="Arial, Helvetica, sans-serif" fill={valueColor} opacity={opacityFor(row.key, row.isTotal)}>{valueStr}</text>
+                <rect x={valueRightX - valueColWidth - 4} y={row.labelY - 9} width={valueColWidth + 8} height="16" fill="white" opacity={valueOpacityFor(row.key)} />
+                <text x={valueRightX} y={row.labelY} textAnchor="end" fontSize="10" fontFamily="Arial, Helvetica, sans-serif" fill={valueColor} opacity={valueOpacityFor(row.key)}>{valueStr}</text>
 
                 {isHovered && (
                   <rect x={labelLeftX - 6} y={row.labelY - 10} width={labelWidth + 12} height="16" rx="8" fill={pillColor} />
                 )}
                 <text x={labelLeftX} y={row.labelY} fontSize="11" fontWeight="bold" fontFamily="Arial, Helvetica, sans-serif"
-                      fill={row.isTotal || isHovered ? '#1a1a1a' : row.color}
+                      fill={row.isTotal || isHovered ? '#1a1a1a' : '#4b5563'}
                       opacity={row.isTotal ? 1 : opacityFor(row.key, false)} style={{cursor: 'pointer'}}
                       onMouseEnter={() => setHovered(row.key)} onMouseLeave={() => setHovered(null)}>
                   {displayKey(row.key)}
@@ -547,22 +555,20 @@
           <line x1={marginLeft} y1={marginTop} x2={marginLeft} y2={marginTop + chartHeight} stroke="#333" strokeWidth="1" />
           <text x={width / 2} y={25} textAnchor="middle" fontSize="16" fontWeight="bold">{name} — {mode === 'dollar' ? '$ Growth' : '% Change'} from Price, {periodLabel}</text>
 
-          {hoveredDot && (() => {
-            const d = tradeDots.find(dot => dot.ticker === hoveredDot.ticker && dot.idx === hoveredDot.idx);
-            if (!d) return null;
+          {hovered && tradeDots.filter(d => d.ticker === hovered).map((d, i) => {
             const delta = d.sharesAfter - d.sharesBefore;
             const deltaText = `${delta > 0 ? '+' : ''}${delta.toLocaleString()} shares`;
             const boxWidth = estimateTextWidth(deltaText) + 10;
             const cx = Math.min(Math.max(d.x, marginLeft + boxWidth / 2), width - marginRight - boxWidth / 2 - 4);
             const cy = d.y - 12;
             return (
-              <g>
+              <g key={'dotlabel' + d.ticker + i}>
                 <rect x={cx - boxWidth / 2} y={cy - 12} width={boxWidth} height={17} fill="white" stroke="#ddd" strokeWidth="1" />
                 <text x={cx} y={cy} textAnchor="middle" fontSize="11" fontWeight="bold" fontFamily="Arial, Helvetica, sans-serif"
                       fill={delta < 0 ? '#dc2626' : '#16a34a'}>{deltaText}</text>
               </g>
             );
-          })()}
+          })}
         </svg>
       );
     }
@@ -663,6 +669,16 @@
           isMounted = false;
           clearTimeout(timeout);
         };
+      }, []);
+
+      // Deep link support: ?report=<filename>.json (e.g. from a link in an ntfy
+      // message) opens straight into that report instead of the home list.
+      useEffect(() => {
+        const reportParam = new URLSearchParams(window.location.search).get('report');
+        if (reportParam) {
+          loadFromServer(reportParam);
+          window.history.replaceState({}, '', window.location.pathname);
+        }
       }, []);
 
       // Auto-recalculate rebalance whenever accounts change (debounced)
