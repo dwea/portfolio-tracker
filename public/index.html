@@ -509,7 +509,7 @@
           ))}
 
           {tradeDots.map((d, i) => (
-            <circle key={'dot' + d.ticker + i} cx={d.x} cy={d.y} r={hovered === d.ticker ? 10 : 7}
+            <circle key={'dot' + d.ticker + i} cx={d.x} cy={d.y} r={hovered === d.ticker ? 5 : 3.5}
                     fill={d.type === 'sell' ? '#dc2626' : '#16a34a'} stroke="white" strokeWidth="1"
                     opacity={lineOpacityFor(d.ticker, false)} style={{cursor: 'pointer'}}
                     onMouseEnter={() => setHovered(d.ticker)}
