@@ -245,6 +245,13 @@ function generateChartSVG(
   // Background
   svg += `<rect width="${width}" height="${height}" fill="white"/>`;
 
+  // Positive/negative tint bands, split at the zero line, so the zero baseline
+  // is easy to spot at a glance without having to read the axis labels.
+  const zeroTintY = Math.max(marginTop, Math.min(marginTop + chartHeight, percentToY(0)));
+  const plotWidth = width - marginRight - marginLeft;
+  svg += `<rect x="${marginLeft}" y="${marginTop}" width="${plotWidth}" height="${zeroTintY - marginTop}" fill="#16a34a" opacity="0.06"/>`;
+  svg += `<rect x="${marginLeft}" y="${zeroTintY}" width="${plotWidth}" height="${marginTop + chartHeight - zeroTintY}" fill="#dc2626" opacity="0.06"/>`;
+
   // Grid lines
   for (let i = 0; i <= 5; i++) {
     const y = marginTop + (i / 5) * chartHeight;

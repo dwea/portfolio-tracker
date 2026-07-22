@@ -475,6 +475,15 @@
       return (
         <svg viewBox={`0 0 ${width} ${finalHeight}`} style={{width: '100%', height: 'auto', maxWidth: width}}>
           <rect width={width} height={finalHeight} fill="white" />
+          {(() => {
+            const zeroY = Math.max(marginTop, Math.min(marginTop + chartHeight, valueToY(0)));
+            return (
+              <>
+                <rect x={marginLeft} y={marginTop} width={width - marginRight - marginLeft} height={zeroY - marginTop} fill="#16a34a" opacity="0.06" />
+                <rect x={marginLeft} y={zeroY} width={width - marginRight - marginLeft} height={marginTop + chartHeight - zeroY} fill="#dc2626" opacity="0.06" />
+              </>
+            );
+          })()}
           {[0, 1, 2, 3, 4, 5].map(i => (
             <line key={'g' + i} x1={marginLeft} y1={marginTop + (i / 5) * chartHeight} x2={width - marginRight} y2={marginTop + (i / 5) * chartHeight} stroke="#efefef" strokeWidth="1" />
           ))}
