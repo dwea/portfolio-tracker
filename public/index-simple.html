@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Portfolio Tracker</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #111; margin: 0; }
+    #tab-nav { border-bottom: 2px solid #e5e7eb; padding: 0.4rem 1rem; display: flex; gap: 1rem; align-items: center; }
+    .tab-btn { padding: 0.45rem 1rem; border: none; background: none; font-size: 0.85rem; font-weight: 500; color: #666; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+    .logout-link { margin-left: auto; font-size: 0.72rem; color: #999; text-decoration: none; }
+    .app { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    .error-box { background: #fee2e2; border: 1px solid #fca5a5; border-radius: 4px; padding: 1rem; margin: 2rem auto; max-width: 600px; color: #991b1b; }
+    .error-title { font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; }
+    .error-text { font-size: 0.9rem; line-height: 1.5; }
+    .button { padding: 0.5rem 1rem; margin: 0.5rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+    .button-primary { background: #2563eb; color: white; }
+    .button-primary:hover { background: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <div id="tab-nav">
+    <button class="tab-btn active">Editor</button>
+    <button class="tab-btn">Schedules</button>
+    <a class="logout-link" href="/logout">Sign out</a>
+  </div>
+
+  <div class="app">
+    <h1>Portfolio Editor</h1>
+    <div class="error-box">
+      <div class="error-title">⚠️ Loading your reports...</div>
+      <div class="error-text" id="status">Connecting to server...</div>
+    </div>
+  </div>
+
+  <script>
+    // Simple approach - just load the reports without React
+    const statusEl = document.getElementById('status');
+
+    fetch('/api/reports')
+      .then(r => {
+        if (r.status === 401) {
+          statusEl.textContent = 'Session expired. Redirecting to login...';
+          setTimeout(() => { window.location.href = '/login.html'; }, 2000);
+          return null;
+        }
+        return r.json();
+      })
+      .then(reports => {
+        if (!reports) return;
+        if (Array.isArray(reports) && reports.length > 0) {
+          // Reload the full app if we successfully got reports
+          statusEl.textContent = 'Loading full editor...';
+          setTimeout(() => { window.location.reload(); }, 500);
+        } else {
+          statusEl.innerHTML = '<p style="margin: 0;">No reports found.</p><p><button class="button button-primary" onclick="window.location.href=/\"/\"; return false;">Create New Report</button></p>';
+        }
+      })
+      .catch(error => {
+        statusEl.innerHTML = '<p style="margin: 0;">Error: ' + error.message + '</p><p><button class="button button-primary" onclick="window.location.reload(); return false;">Retry</button></p>';
+      });
+  </script>
+</body>
+</html>
