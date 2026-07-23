@@ -672,11 +672,12 @@
       }, []);
 
       // Deep link support: ?report=<filename>.json (e.g. from a link in an ntfy
-      // message) opens straight into that report instead of the home list.
+      // message) shows that report's chart preview on the home screen, rather
+      // than opening the full editor.
       useEffect(() => {
         const reportParam = new URLSearchParams(window.location.search).get('report');
         if (reportParam) {
-          loadFromServer(reportParam);
+          loadCharts(reportParam);
           window.history.replaceState({}, '', window.location.pathname);
         }
       }, []);
