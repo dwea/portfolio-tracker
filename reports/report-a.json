@@ -35,7 +35,7 @@
         },
         {
           "ticker": "AMZN.TO",
-          "shares": 317,
+          "shares": 0,
           "name": "AMZN.TO",
           "targetWeight": 3.6,
           "weightTriggerAbove": 7
@@ -50,7 +50,7 @@
         },
         {
           "ticker": "GOOG",
-          "shares": 28,
+          "shares": 0,
           "name": "GOOG",
           "targetWeight": 5.3,
           "weightTriggerAbove": 9
@@ -91,9 +91,14 @@
           "ticker": "XDIV.TO",
           "name": "XDIV.TO",
           "shares": 2602
+        },
+        {
+          "ticker": "CASH.TO",
+          "name": "CASH.TO",
+          "shares": 990
         }
       ],
-      "cash": 29022.86,
+      "cash": 262,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,
@@ -198,7 +203,7 @@
       "stocks": [
         {
           "ticker": "XSP.TO",
-          "shares": 86,
+          "shares": 40,
           "name": "XSP",
           "targetWeight": 75,
           "weightTriggerAbove": 83,
@@ -206,13 +211,18 @@
         },
         {
           "ticker": "IAU",
-          "shares": 12,
+          "shares": 0,
           "targetWeight": 20,
           "weightTriggerAbove": 27,
           "weightTriggerBelow": 13
+        },
+        {
+          "ticker": "VDY.TO",
+          "name": "VDY.TO",
+          "shares": 67
         }
       ],
-      "cash": 626.14,
+      "cash": 33.5,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,
