@@ -95,10 +95,10 @@
         {
           "ticker": "CASH.TO",
           "name": "CASH.TO",
-          "shares": 990
+          "shares": 790
         }
       ],
-      "cash": 262,
+      "cash": 5274,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,

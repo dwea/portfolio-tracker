@@ -234,7 +234,7 @@
           "weightTriggerAbove": 5,
           "priceTriggerAbove": 20,
           "priceTriggerBelow": 5,
-          "manualPrice": 66.35
+          "manualPrice": 67.16
         },
         {
           "ticker": "XEU.TO",
@@ -473,7 +473,7 @@
         {
           "ticker": "Dram",
           "name": "Dram",
-          "shares": 60,
+          "shares": 0,
           "targetWeight": 10,
           "weightTriggerAbove": 15,
           "weightTriggerBelow": 5,
@@ -483,7 +483,7 @@
         {
           "ticker": "SMH",
           "name": "SMH",
-          "shares": 14,
+          "shares": 0,
           "targetWeight": 10,
           "weightTriggerAbove": 16,
           "weightTriggerBelow": 5,

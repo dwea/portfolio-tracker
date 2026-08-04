@@ -238,6 +238,7 @@
       // (e.g. the synthetic Cash row) simply never accrues growth.
       const tickerGrowth = {};  // ticker -> $ array aligned to dataPoints
       const tickerPercent = {}; // ticker -> % array aligned to dataPoints
+      const tickerValue = {};   // ticker -> actual $ position value array aligned to dataPoints
       const totalGrowth = new Array(dataPoints.length).fill(0);
 
       tickers.forEach(ticker => {
@@ -245,8 +246,10 @@
         let prevShares = 0;
         let priceBase = null;
         let cumGrowth = 0;
+        let lastKnownPrice = null;
         const growthArr = new Array(dataPoints.length).fill(0);
         const percentArr = new Array(dataPoints.length).fill(0);
+        const valueArr = new Array(dataPoints.length).fill(0);
 
         dataPoints.forEach((point, idx) => {
           const h = point.holdings.find(hh => hh.ticker === ticker);
@@ -261,12 +264,17 @@
             ? ((price - priceBase) / priceBase) * 100
             : (idx > 0 ? percentArr[idx - 1] : 0);
 
-          if (price !== null) prevPrice = price;
+          const effectivePrice = price !== null ? price : lastKnownPrice;
+          const sharesToday = h ? h.shares : 0;
+          valueArr[idx] = (effectivePrice !== null && sharesToday) ? sharesToday * effectivePrice : 0;
+
+          if (price !== null) { prevPrice = price; lastKnownPrice = price; }
           if (h) prevShares = h.shares;
         });
 
         tickerGrowth[ticker] = growthArr;
         tickerPercent[ticker] = percentArr;
+        tickerValue[ticker] = valueArr;
         growthArr.forEach((g, idx) => { totalGrowth[idx] += g; });
       });
 
@@ -274,10 +282,14 @@
         date: point.date,
         totalValue: mode === 'dollar'
           ? totalGrowth[idx]
-          : (baselineTotal > 0 ? (totalGrowth[idx] / baselineTotal) * 100 : 0),
+          : mode === 'value'
+            ? point.accountTotal
+            : (baselineTotal > 0 ? (totalGrowth[idx] / baselineTotal) * 100 : 0),
         holdingsValue: point.holdings.map(h => ({
           ticker: h.ticker,
-          value: mode === 'dollar' ? tickerGrowth[h.ticker][idx] : tickerPercent[h.ticker][idx],
+          value: mode === 'dollar' ? tickerGrowth[h.ticker][idx]
+            : mode === 'value' ? tickerValue[h.ticker][idx]
+            : tickerPercent[h.ticker][idx],
         })),
       }));
 
@@ -347,7 +359,7 @@
       const { points, tickers, tickerEvents } = series;
       const marginLeft = 60, marginRight = 170, marginTop = 40, marginBottom = 60;
       const chartWidth = width - marginLeft - marginRight;
-      const formatAxisValue = (v) => mode === 'dollar' ? formatMoney(v, currency) : `${v.toFixed(1)}%`;
+      const formatAxisValue = (v) => (mode === 'dollar' || mode === 'value') ? formatMoney(v, currency) : `${v.toFixed(1)}%`;
       const periodLabel = String(days) === 'all' ? 'Since Earliest Data' : `Past ${days} Days`;
       const estimateTextWidth = (str) => str.length * 7.3;
       const labelLineHeight = 13;
@@ -553,7 +565,9 @@
             return <text key={'xl' + idx} x={indexToX(idx)} y={marginTop + chartHeight + 20} textAnchor="middle" fontSize="11" fill="#666">{point.date.substring(5)}</text>;
           })}
           <line x1={marginLeft} y1={marginTop} x2={marginLeft} y2={marginTop + chartHeight} stroke="#333" strokeWidth="1" />
-          <text x={width / 2} y={25} textAnchor="middle" fontSize="16" fontWeight="bold">{name} — {mode === 'dollar' ? '$ Growth' : '% Change'} from Price, {periodLabel}</text>
+          <text x={width / 2} y={25} textAnchor="middle" fontSize="16" fontWeight="bold">
+            {name} — {mode === 'dollar' ? '$ Growth from Price' : mode === 'value' ? 'Total Value' : '% Change from Price'}, {periodLabel} (Total: {formatAxisValue(points[points.length - 1].totalValue)})
+          </text>
 
           {hovered && tradeDots.filter(d => d.ticker === hovered).map((d, i) => {
             const delta = d.sharesAfter - d.sharesBefore;
@@ -1611,7 +1625,7 @@
                             ))}
                           </div>
                           <div style={{display: 'flex', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.4rem'}}>
-                            {[{label: '% Change', value: 'percent'}, {label: '$ Change', value: 'dollar'}].map(opt => (
+                            {[{label: '% Change', value: 'percent'}, {label: '$ Change', value: 'dollar'}, {label: 'Total Value', value: 'value'}].map(opt => (
                               <button key={opt.label}
                                 className={`btn ${chartsMode === opt.value ? 'btn-primary' : 'btn-secondary'}`}
                                 style={{padding: '0.25rem 0.7rem', fontSize: '0.75rem'}}
@@ -1657,7 +1671,7 @@
                             ))}
                           </div>
                           <div style={{display: 'flex', justifyContent: 'center', gap: '0.4rem', marginBottom: '1rem'}}>
-                            {[{label: '% Change', value: 'percent'}, {label: '$ Change', value: 'dollar'}].map(opt => (
+                            {[{label: '% Change', value: 'percent'}, {label: '$ Change', value: 'dollar'}, {label: 'Total Value', value: 'value'}].map(opt => (
                               <button key={opt.label}
                                 className={`btn ${chartsMode === opt.value ? 'btn-primary' : 'btn-secondary'}`}
                                 style={{padding: '0.25rem 0.7rem', fontSize: '0.75rem'}}
