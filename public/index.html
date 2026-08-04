@@ -363,12 +363,18 @@
       const periodLabel = String(days) === 'all' ? 'Since Earliest Data' : `Past ${days} Days`;
       const estimateTextWidth = (str) => str.length * 7.3;
       const labelLineHeight = 13;
-      const rowCount = tickers.length + 1; // + Total
+      // In value mode the account total dwarfs any single holding's value, so the Total
+      // line is dropped from the chart (it still appears in the title) rather than
+      // squashing every holding's line flat against the bottom.
+      const showTotal = mode !== 'value';
+      const rowCount = tickers.length + (showTotal ? 1 : 0);
 
       let minValue = Infinity, maxValue = -Infinity;
       points.forEach(p => {
-        minValue = Math.min(minValue, p.totalValue);
-        maxValue = Math.max(maxValue, p.totalValue);
+        if (showTotal) {
+          minValue = Math.min(minValue, p.totalValue);
+          maxValue = Math.max(maxValue, p.totalValue);
+        }
         p.holdingsValue.forEach(h => {
           minValue = Math.min(minValue, h.value);
           maxValue = Math.max(maxValue, h.value);
@@ -400,12 +406,14 @@
             endX: pts[pts.length - 1][0], endY: pts[pts.length - 1][1] } : null;
         }).filter(Boolean);
 
-        const totalPts = points.map((point, idx) => [indexToX(idx), valueToY(point.totalValue)]);
-        const totalLastValue = points[points.length - 1].totalValue;
-        const totalSeries = { key: 'TOTAL', pts: totalPts, color: '#1a1a1a', isTotal: true, lastValue: totalLastValue,
-          endX: totalPts[totalPts.length - 1][0], endY: totalPts[totalPts.length - 1][1] };
+        const totalSeries = showTotal ? (() => {
+          const totalPts = points.map((point, idx) => [indexToX(idx), valueToY(point.totalValue)]);
+          const totalLastValue = points[points.length - 1].totalValue;
+          return { key: 'TOTAL', pts: totalPts, color: '#1a1a1a', isTotal: true, lastValue: totalLastValue,
+            endX: totalPts[totalPts.length - 1][0], endY: totalPts[totalPts.length - 1][1] };
+        })() : null;
 
-        const allSeriesRaw = [...tickerSeries, totalSeries];
+        const allSeriesRaw = showTotal ? [...tickerSeries, totalSeries] : tickerSeries;
 
         // Total sits in the same stacked label column as every ticker, positioned as close
         // as possible to its own line's last point without overlapping any other label.
