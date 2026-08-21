@@ -324,8 +324,16 @@ function generateChartSVG(
   // Y-axis
   svg += `<line x1="${marginLeft}" y1="${marginTop}" x2="${marginLeft}" y2="${marginTop + chartHeight}" stroke="#333" stroke-width="1"/>`;
 
-  // Title
-  const periodLabel = `Past ${days} Days`;
+  // Title — if there isn't yet enough snapshot history to cover the requested
+  // window (e.g. a newly added account), say so instead of silently showing a
+  // shorter range under a "Past 30 Days" label.
+  const historySpanDays = Math.floor(
+    (new Date(dataPoints[dataPoints.length - 1].date).getTime() - new Date(dataPoints[0].date).getTime())
+      / 86400000
+  ) + 1;
+  const periodLabel = historySpanDays < days
+    ? `Past ${days} Days (only ${historySpanDays} days history)`
+    : `Past ${days} Days`;
   svg += `<text x="${width / 2}" y="25" text-anchor="middle" font-size="16" font-weight="bold">${accountName} — % Change from Price, ${periodLabel}</text>`;
 
   svg += '</svg>';
