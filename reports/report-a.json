@@ -73,7 +73,7 @@
         },
         {
           "ticker": "XBB.TO",
-          "shares": 1897,
+          "shares": 1902,
           "name": "XBB.TO",
           "weightTriggerBelow": 2,
           "targetWeight": 13.8,
@@ -90,15 +90,15 @@
         {
           "ticker": "XDIV.TO",
           "name": "XDIV.TO",
-          "shares": 2602
+          "shares": 2608
         },
         {
           "ticker": "CASH.TO",
           "name": "CASH.TO",
-          "shares": 790
+          "shares": 791
         }
       ],
-      "cash": 5274,
+      "cash": 362,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,
@@ -118,7 +118,7 @@
         },
         {
           "ticker": "XDIV.TO",
-          "shares": 1138,
+          "shares": 1140,
           "weightTriggerAbove": 27,
           "weightTriggerBelow": 13,
           "name": "XDIV",
@@ -140,7 +140,7 @@
           "targetWeight": 5
         }
       ],
-      "cash": 118.87,
+      "cash": 202.61,
       "currency": "CAD",
       "startingValue": 99000,
       "targetValue": 110000,
@@ -192,37 +192,7 @@
           "shares": 333
         }
       ],
-      "cash": 150,
-      "currency": "CAD",
-      "dayChangeTrigger": 5,
-      "near52WkLow": 0.1,
-      "near52WkHigh": 0.1
-    },
-    {
-      "name": "RESP",
-      "stocks": [
-        {
-          "ticker": "XSP.TO",
-          "shares": 40,
-          "name": "XSP",
-          "targetWeight": 75,
-          "weightTriggerAbove": 83,
-          "weightTriggerBelow": 67
-        },
-        {
-          "ticker": "IAU",
-          "shares": 0,
-          "targetWeight": 20,
-          "weightTriggerAbove": 27,
-          "weightTriggerBelow": 13
-        },
-        {
-          "ticker": "VDY.TO",
-          "name": "VDY.TO",
-          "shares": 67
-        }
-      ],
-      "cash": 33.5,
+      "cash": 239,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,

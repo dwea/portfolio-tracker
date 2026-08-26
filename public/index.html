@@ -624,6 +624,7 @@
         return () => window.removeEventListener('resize', computeHeight);
       }, [fullscreenChart]);
       const [savedReports, setSavedReports] = useState([]);
+      const [reportTotals, setReportTotals] = useState({}); // { [filename]: {loading}|{grandTotalChange, grandTotalChangePercent}|{error} }
       const [currentFilename, setCurrentFilename] = useState(null);
       const [saveToast, setSaveToast] = useState(null); // null | message string
       const [isRenamingReport, setIsRenamingReport] = useState(false); // whether the report-name rename field is open
@@ -692,6 +693,28 @@
           clearTimeout(timeout);
         };
       }, []);
+
+      // Auto-fetch each saved report's latest grand total $ change on load, so the
+      // home screen list can show it next to the report name without a click.
+      useEffect(() => {
+        if (savedReports.length === 0) return;
+        savedReports.forEach(f => {
+          setReportTotals(prev => (prev[f] ? prev : { ...prev, [f]: { loading: true } }));
+          fetch(`/api/reports/${f}/holdings`, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+              if (data.error) throw new Error(data.error);
+              setReportTotals(prev => ({ ...prev, [f]: {
+                loading: false,
+                grandTotalChange: data.grandTotalChange,
+                grandTotalChangePercent: data.grandTotalChangePercent,
+              } }));
+            })
+            .catch(err => {
+              setReportTotals(prev => ({ ...prev, [f]: { loading: false, error: err.message } }));
+            });
+        });
+      }, [savedReports]);
 
       // Deep link support: ?report=<filename>.json (e.g. from a link in an ntfy
       // message) shows that report's chart preview on the home screen, rather
@@ -1560,31 +1583,54 @@
                 </div>
               ) : savedReports.length > 0 ? (
                 <div>
-                  <p style={{marginBottom: '0.75rem', fontSize: '0.75rem', color: '#888'}}>Click report name to edit</p>
                   <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '2rem'}}>
                     {savedReports.map((f, idx) => {
                       const isChartsLoading = chartsLoading && chartsFile === f;
                       const isReportLoading = quickPreviewingFile === f;
+                      const totals = reportTotals[f];
+                      let changeEl = null;
+                      if (totals) {
+                        if (totals.loading) {
+                          changeEl = <span style={{fontSize: '0.8rem', color: '#aaa'}}>…</span>;
+                        } else if (totals.error) {
+                          changeEl = <span style={{fontSize: '0.8rem', color: '#ccc'}} title={totals.error}>—</span>;
+                        } else {
+                          const isUp = totals.grandTotalChange >= 0;
+                          const sign = isUp ? '＋' : '－';
+                          changeEl = (
+                            <span style={{fontSize: '0.85rem', fontWeight: 600, color: isUp ? '#16a34a' : '#dc2626'}}>
+                              {sign}${Math.abs(totals.grandTotalChange).toLocaleString(undefined, {maximumFractionDigits: 0})}
+                              {' '}({sign}{Math.abs(totals.grandTotalChangePercent).toFixed(1)}%)
+                            </span>
+                          );
+                        }
+                      }
                       return (
-                        <div key={f} style={{display: 'flex', gap: '0.4rem', alignItems: 'center', padding: '1rem 0.75rem', width: '100%', maxWidth: '460px', justifyContent: 'center', boxSizing: 'border-box', borderBottom: idx !== savedReports.length - 1 ? '1px solid #eee' : 'none'}}>
-                          <button style={{width: '170px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', fontFamily: 'inherit', fontSize: '1.1rem', fontWeight: 700, color: '#000', background: 'none', border: 'none', padding: '0.5rem 0.2rem', cursor: 'pointer'}} onClick={() => loadFromServer(f)} title="Edit this report">
-                            <span>{f.replace('.json', '')}</span>
-                          </button>
-                          <button className="btn btn-secondary btn-preview-tall" style={{display: 'flex', alignItems: 'center', gap: '0.35rem'}} onClick={() => loadCharts(f)} disabled={isChartsLoading} title="View charts for this report">
-                            <svg width="19" height="19" viewBox="0 0 16 16" fill="none" aria-hidden="true"><polyline points="1,13 5,8 8,10 15,2" stroke="#333" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            <span style={{opacity: 0.55}}>{isChartsLoading ? 'Fetching…' : 'Charts'}</span>
-                          </button>
-                          <button className="btn btn-secondary btn-preview-tall" style={{display: 'flex', alignItems: 'center', gap: '0.35rem'}} onClick={() => quickPreviewReport(f)} disabled={isReportLoading} title="Preview this report's SMS text">
-                            <svg width="19" height="19" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                              <circle cx="2" cy="3" r="1.6" fill="#22c55e"/>
-                              <rect x="6" y="2.2" width="9" height="1.6" rx="0.8" fill="#333"/>
-                              <circle cx="2" cy="8" r="1.6" fill="#ef4444"/>
-                              <rect x="6" y="7.2" width="9" height="1.6" rx="0.8" fill="#333"/>
-                              <circle cx="2" cy="13" r="1.6" fill="#22c55e"/>
-                              <rect x="6" y="12.2" width="9" height="1.6" rx="0.8" fill="#333"/>
-                            </svg>
-                            <span style={{opacity: 0.55}}>{isReportLoading ? 'Fetching…' : 'Report'}</span>
-                          </button>
+                        <div key={f} style={{display: 'flex', flexDirection: 'column', gap: '0.35rem', padding: '1rem 0.75rem', width: '100%', maxWidth: '460px', boxSizing: 'border-box', borderBottom: idx !== savedReports.length - 1 ? '1px solid #eee' : 'none'}}>
+                          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem'}}>
+                            <span style={{fontFamily: 'inherit', fontSize: '1rem', fontWeight: 700, color: '#000'}}>{f.replace('.json', '')}</span>
+                            {changeEl}
+                          </div>
+                          <div style={{display: 'flex', gap: '0.4rem', alignItems: 'center', justifyContent: 'center'}}>
+                            <button className="btn btn-secondary btn-preview-tall" onClick={() => loadFromServer(f)} title="Edit this report">
+                              <span>Edit</span>
+                            </button>
+                            <button className="btn btn-secondary btn-preview-tall" style={{display: 'flex', alignItems: 'center', gap: '0.35rem'}} onClick={() => loadCharts(f)} disabled={isChartsLoading} title="View charts for this report">
+                              <svg width="19" height="19" viewBox="0 0 16 16" fill="none" aria-hidden="true"><polyline points="1,13 5,8 8,10 15,2" stroke="#333" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              <span style={{opacity: 0.55}}>{isChartsLoading ? 'Fetching…' : 'Charts'}</span>
+                            </button>
+                            <button className="btn btn-secondary btn-preview-tall" style={{display: 'flex', alignItems: 'center', gap: '0.35rem'}} onClick={() => quickPreviewReport(f)} disabled={isReportLoading} title="Preview this report's SMS text">
+                              <svg width="19" height="19" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                <circle cx="2" cy="3" r="1.6" fill="#22c55e"/>
+                                <rect x="6" y="2.2" width="9" height="1.6" rx="0.8" fill="#333"/>
+                                <circle cx="2" cy="8" r="1.6" fill="#ef4444"/>
+                                <rect x="6" y="7.2" width="9" height="1.6" rx="0.8" fill="#333"/>
+                                <circle cx="2" cy="13" r="1.6" fill="#22c55e"/>
+                                <rect x="6" y="12.2" width="9" height="1.6" rx="0.8" fill="#333"/>
+                              </svg>
+                              <span style={{opacity: 0.55}}>{isReportLoading ? 'Fetching…' : 'Report'}</span>
+                            </button>
+                          </div>
                         </div>
                       );
                     })}

@@ -42,7 +42,7 @@
           "priceTriggerBelow": 800
         },
         {
-          "ticker": "FMS.v",
+          "ticker": "FMS.V",
           "shares": 200,
           "targetWeight": 0,
           "weightTriggerAbove": 4,
@@ -234,7 +234,7 @@
           "weightTriggerAbove": 5,
           "priceTriggerAbove": 20,
           "priceTriggerBelow": 5,
-          "manualPrice": 67.16
+          "manualPrice": 68.23
         },
         {
           "ticker": "XEU.TO",
@@ -415,6 +415,11 @@
           "weightTriggerBelow": 4,
           "priceTriggerAbove": 83,
           "priceTriggerBelow": 62
+        },
+        {
+          "ticker": "XDIV.TO",
+          "name": "XDIV.TO",
+          "shares": 150
         }
       ],
       "cash": 19470,
@@ -491,7 +496,7 @@
           "priceTriggerBelow": 530
         }
       ],
-      "cash": 5707,
+      "cash": 23000,
       "currency": "CAD"
     }
   ],

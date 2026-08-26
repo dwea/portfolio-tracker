@@ -19,11 +19,11 @@
       "stocks": [
         {
           "ticker": "TD.TO",
-          "shares": 250
+          "shares": 165
         },
         {
           "ticker": "CNR.TO",
-          "shares": 100
+          "shares": 75
         },
         {
           "ticker": "WPM",
@@ -46,7 +46,7 @@
         },
         {
           "ticker": "XSP.TO",
-          "shares": 600
+          "shares": 500
         },
         {
           "ticker": "ENB",
@@ -62,7 +62,40 @@
           "shares": 8000
         }
       ],
-      "cash": -115.86,
+      "cash": 30438.85,
+      "currency": "CAD"
+    },
+    {
+      "name": "TFSA",
+      "stocks": [
+        {
+          "ticker": "VDY.TO",
+          "shares": 1875
+        }
+      ],
+      "cash": 2677,
+      "currency": "CAD"
+    },
+    {
+      "name": "RIF",
+      "stocks": [
+        {
+          "ticker": "TD.TO",
+          "name": "TD.TO",
+          "shares": 650
+        },
+        {
+          "ticker": "WPM",
+          "name": "WPM",
+          "shares": 150
+        },
+        {
+          "ticker": "XDIV.TO",
+          "name": "XDIV.TO",
+          "shares": 2365
+        }
+      ],
+      "cash": 5125.52,
       "currency": "CAD"
     }
   ],
