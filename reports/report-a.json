@@ -73,7 +73,7 @@
         },
         {
           "ticker": "XBB.TO",
-          "shares": 1902,
+          "shares": 1907,
           "name": "XBB.TO",
           "weightTriggerBelow": 2,
           "targetWeight": 13.8,
@@ -90,7 +90,7 @@
         {
           "ticker": "XDIV.TO",
           "name": "XDIV.TO",
-          "shares": 2608
+          "shares": 2614
         },
         {
           "ticker": "CASH.TO",
@@ -98,7 +98,7 @@
           "shares": 791
         }
       ],
-      "cash": 362,
+      "cash": 417.13,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,
@@ -118,7 +118,7 @@
         },
         {
           "ticker": "XDIV.TO",
-          "shares": 1140,
+          "shares": 1142,
           "weightTriggerAbove": 27,
           "weightTriggerBelow": 13,
           "name": "XDIV",
@@ -140,7 +140,7 @@
           "targetWeight": 5
         }
       ],
-      "cash": 202.61,
+      "cash": 248.15,
       "currency": "CAD",
       "startingValue": 99000,
       "targetValue": 110000,
@@ -184,7 +184,7 @@
         {
           "ticker": "VDY.TO",
           "name": "VDY.TO",
-          "shares": 550
+          "shares": 551
         },
         {
           "ticker": "XDIV.TO",
@@ -192,7 +192,7 @@
           "shares": 333
         }
       ],
-      "cash": 239,
+      "cash": 318.68,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,
