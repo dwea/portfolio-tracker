@@ -42,14 +42,38 @@ function parseScheduleWhen(when: string): { days: number[]; hour: number; minute
   return LEGACY_SCHEDULE_TIMES[when] || null;
 }
 
+// Schedule times are expressed in market time (America/Toronto — covers both
+// NYSE/NASDAQ and TSX) so reports stay at the same point in the trading day
+// all year. BC no longer changes its clocks, but Eastern still does, so
+// reading the schedule against the machine's local clock would drift an hour
+// against the market each spring and fall. Keep in sync with server.js.
+const MARKET_TIMEZONE = 'America/Toronto';
+
+const WEEKDAY_TO_NUM: Record<string, number> = {
+  Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+};
+
+function marketNow(): { day: number; hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: MARKET_TIMEZONE,
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date());
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? '';
+  return {
+    day: WEEKDAY_TO_NUM[get('weekday')] ?? -1,
+    hour: parseInt(get('hour'), 10) % 24, // h23 can report midnight as 24
+    minute: parseInt(get('minute'), 10),
+  };
+}
+
 function shouldRunNow(when: string): boolean {
   const sched = parseScheduleWhen(when);
   if (!sched) return false;
 
-  const now = new Date();
-  const currentDay = now.getDay();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
+  const { day: currentDay, hour: currentHour, minute: currentMinute } = marketNow();
 
   return (
     sched.days.includes(currentDay) &&
