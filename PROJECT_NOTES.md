@@ -97,6 +97,25 @@ Response format:
 - PM2 ensures server restarts automatically after Mac mini reboots
 - Stock price updates happen in real-time via API calls from the browser
 
+## Report relay
+
+Each report run writes a per-report copy, `data/last-report-<slug>.txt`
+(e.g. `last-report-mum-report.txt`), alongside the shared `last-report.txt`,
+which is overwritten by whichever report ran last. The per-report plaintext
+files are gitignored and are never committed to the public repo. When
+`PT_REPORTS_PASSPHRASE` is set in `.env`, an AES-256-GCM encrypted copy
+(`.txt.enc`, base64 of salt || iv || tag || ciphertext, scrypt key) is
+written alongside it.
+
+A launchd job (`scripts/push-reports.sh`, installed by
+`scripts/install-report-push.sh`, every 15 minutes) pushes the snapshots to
+GitHub for Muse to relay. Two deployments, chosen at install time:
+`private` copies the plaintext files into the private
+`dwea/portfolio-reports` repo; `encrypted` commits the ciphertext files to
+this repo and syncs the passphrase to the private repo as `passphrase.txt`.
+The private repo is needed in both modes. Muse checks the repo at 7 PM
+Vancouver and previews any new Mum Report to Dave before it goes to Sheila
+by iMessage.
 ## Schedule Times Are Market Time
 
 Report schedule times (`weekdays-at-10`, etc.) are in market time,

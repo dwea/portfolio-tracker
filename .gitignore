@@ -3,6 +3,7 @@ dist/
 logs/*.log
 data/*.json
 data/*.lock
+data/last-report-*.txt
 *.log
 
 # Environment variables
