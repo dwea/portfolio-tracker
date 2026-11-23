@@ -2,6 +2,7 @@ import { readdir, readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { config as dotenvConfig } from 'dotenv';
+import { randomBytes, scryptSync, createCipheriv } from 'crypto';
 import { Report, ReportData, AccountData, Schedule } from './types.js';
 import { calculateAccount, pingYahoo } from './calculator.js';
 import { formatShort, formatDetailed, formatRebalanceReport } from './formatter.js';
@@ -109,6 +110,20 @@ async function generateReport(config: Report, format: 'short' | 'detailed' | 're
   };
 }
 
+// Symmetric encryption for the report relay: AES-256-GCM with a scrypt-derived
+// key. Output is base64(salt[16] || iv[12] || authTag[16] || ciphertext).
+// The passphrase comes from PT_REPORTS_PASSPHRASE in .env (never in git).
+// Muse decrypts the .enc file on its side (see PROJECT_NOTES.md).
+function encryptText(plaintext: string, passphrase: string): string {
+  const salt = randomBytes(16);
+  const key = scryptSync(passphrase, salt, 32);
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([salt, iv, tag, ciphertext]).toString('base64');
+}
+
 async function generateAndSendReport(config: Report, schedule: Schedule, testMode: boolean = false): Promise<void> {
   const { format, chart = 'none' } = schedule;
   await log(`Generating ${format} report: ${config.reportName}${chart !== 'none' ? ` (chart: ${chart})` : ''}${testMode ? ' (TEST MODE)' : ''}`);
@@ -198,6 +213,25 @@ async function generateAndSendReport(config: Report, schedule: Schedule, testMod
 
     await writeFile(join(dataDir, 'last-report.txt'), message);
     await log(`Wrote report preview to data/last-report.txt`);
+
+    // Per-report copy for the Muse relay (see PROJECT_NOTES.md "Report relay").
+    // The shared last-report.txt is overwritten by whichever report ran last
+    // (all three fire at 17:00 ET), so the nightly check needs one file per
+    // report. The plaintext copy is gitignored and never committed to the
+    // public repo; the push job decides where it goes. When
+    // PT_REPORTS_PASSPHRASE is set, an encrypted copy is written alongside
+    // it, and only the ciphertext is pushed to the public repo.
+    const reportSlug = config.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const perReportPath = join(dataDir, `last-report-${reportSlug}.txt`);
+    await writeFile(perReportPath, message);
+    await log(`Wrote report preview to ${perReportPath}`);
+
+    const relayPassphrase = process.env.PT_REPORTS_PASSPHRASE || '';
+    if (relayPassphrase) {
+      const encPath = `${perReportPath}.enc`;
+      await writeFile(encPath, encryptText(message, relayPassphrase));
+      await log(`Wrote encrypted report preview to ${encPath}`);
+    }
 
     if (config.alertRecipients.length > 0) {
       await sendTextMessage(config.alertRecipients, message, testMode, log);
