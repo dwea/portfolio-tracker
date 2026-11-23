@@ -2,19 +2,19 @@
   "reportName": "Report A",
   "schedules": [
     {
-      "when": "weekdays-at-7",
+      "when": "weekdays-at-10",
       "format": "detailed"
-    },
-    {
-      "when": "weekdays-at-9",
-      "format": "short"
     },
     {
       "when": "weekdays-at-12",
       "format": "short"
     },
     {
-      "when": "weekdays-at-14",
+      "when": "weekdays-at-15",
+      "format": "short"
+    },
+    {
+      "when": "weekdays-at-17",
       "format": "detailed"
     }
   ],

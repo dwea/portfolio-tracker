@@ -96,3 +96,13 @@ Response format:
 - Mac mini must remain powered on for server availability
 - PM2 ensures server restarts automatically after Mac mini reboots
 - Stock price updates happen in real-time via API calls from the browser
+
+## Schedule Times Are Market Time
+
+Report schedule times (`weekdays-at-10`, etc.) are in market time,
+America/Toronto, and both schedulers (server.js node-cron and the runner CLI)
+interpret them in that timezone. This keeps every report at the same point in
+the trading day year-round: BC no longer changes its clocks, but Eastern
+still does. In BC wall-clock terms the reports therefore run an hour later in
+winter than in summer (e.g. the "30 minutes after the open" report is at
+7:00 AM BC in summer, 8:00 AM BC in winter).
