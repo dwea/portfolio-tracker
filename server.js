@@ -142,6 +142,14 @@ const legacyScheduleMap = {
   'friday-at-5pm': '0 17 * * 5',
 };
 
+// Report schedule times are expressed in market time (America/Toronto —
+// covers both NYSE/NASDAQ and TSX), and every job is scheduled in that
+// timezone so reports stay at the same point in the trading day all year.
+// BC no longer changes its clocks, but Eastern still does, so reading a
+// schedule against the machine's local clock would drift an hour against
+// the market each spring and fall.
+const MARKET_TIMEZONE = 'America/Toronto';
+
 // Parse human-readable schedule formats to cron syntax
 function parseToCron(scheduleWhen) {
   // If it's already in cron format (5 parts separated by spaces), return as-is
@@ -172,9 +180,9 @@ function cronToHuman(cronExpression) {
       const ampm = hour >= 12 ? 'pm' : 'am';
       const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
       const timeStr = `${displayHour}:00${ampm}`;
-      if (daysPart === '1-5') return `Weekdays ${timeStr}`;
-      if (daysPart === '*') return `Daily ${timeStr}`;
-      if (daysPart === '0,6') return `Weekends ${timeStr}`;
+      if (daysPart === '1-5') return `Weekdays ${timeStr} ET`;
+      if (daysPart === '*') return `Daily ${timeStr} ET`;
+      if (daysPart === '0,6') return `Weekends ${timeStr} ET`;
     }
   }
   return cronExpression;
@@ -183,7 +191,7 @@ function cronToHuman(cronExpression) {
 // Calculate next run time for a cron expression
 function getNextRunTime(cronExpression) {
   try {
-    const schedule = cron.schedule(cronExpression, () => {}, { scheduled: false });
+    const schedule = cron.schedule(cronExpression, () => {}, { scheduled: false, timezone: MARKET_TIMEZONE });
     // This is a workaround - node-cron doesn't expose next run time directly
     // We'll return a placeholder for now
     return 'Scheduled';
@@ -287,7 +295,7 @@ function scheduleReport(reportDef) {
     const job = CRON_ENABLED
       ? cron.schedule(cronExpression, () => {
           runReport(reportName, format, schedule.when);
-        })
+        }, { timezone: MARKET_TIMEZONE })
       : { stop: () => {} };
 
     jobs.push({

@@ -2,11 +2,11 @@
   "reportName": "Mum Report",
   "schedules": [
     {
-      "when": "weekdays-at-9",
+      "when": "weekdays-at-12",
       "format": "detailed"
     },
     {
-      "when": "weekdays-at-14",
+      "when": "weekdays-at-17",
       "format": "detailed"
     }
   ],
