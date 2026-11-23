@@ -65,7 +65,7 @@
         },
         {
           "ticker": "VE.TO",
-          "shares": 981,
+          "shares": 734,
           "name": "VE",
           "targetWeight": 15.5,
           "weightTriggerAbove": 15,
@@ -73,7 +73,7 @@
         },
         {
           "ticker": "XBB.TO",
-          "shares": 1907,
+          "shares": 1017,
           "name": "XBB.TO",
           "weightTriggerBelow": 2,
           "targetWeight": 13.8,
@@ -90,15 +90,20 @@
         {
           "ticker": "XDIV.TO",
           "name": "XDIV.TO",
-          "shares": 2614
+          "shares": 2626
         },
         {
           "ticker": "CASH.TO",
           "name": "CASH.TO",
-          "shares": 791
+          "shares": 593
+        },
+        {
+          "ticker": "NVDA.TO",
+          "name": "NVDA.TO",
+          "shares": 580
         }
       ],
-      "cash": 417.13,
+      "cash": 7322.5,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,
@@ -118,7 +123,7 @@
         },
         {
           "ticker": "XDIV.TO",
-          "shares": 1142,
+          "shares": 1146,
           "weightTriggerAbove": 27,
           "weightTriggerBelow": 13,
           "name": "XDIV",
@@ -140,7 +145,7 @@
           "targetWeight": 5
         }
       ],
-      "cash": 248.15,
+      "cash": 402.18,
       "currency": "CAD",
       "startingValue": 99000,
       "targetValue": 110000,
@@ -153,7 +158,7 @@
       "stocks": [
         {
           "ticker": "EQL-F.TO",
-          "shares": 429,
+          "shares": 430,
           "name": "EQL-F",
           "targetWeight": 24.5,
           "weightTriggerAbove": 28,
@@ -184,7 +189,7 @@
         {
           "ticker": "VDY.TO",
           "name": "VDY.TO",
-          "shares": 551
+          "shares": 553
         },
         {
           "ticker": "XDIV.TO",
@@ -192,7 +197,7 @@
           "shares": 333
         }
       ],
-      "cash": 318.68,
+      "cash": 603.06,
       "currency": "CAD",
       "dayChangeTrigger": 5,
       "near52WkLow": 0.1,

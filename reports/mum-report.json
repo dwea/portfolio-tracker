@@ -62,7 +62,7 @@
           "shares": 8000
         }
       ],
-      "cash": 30438.85,
+      "cash": 31446.61,
       "currency": "CAD"
     },
     {
@@ -70,10 +70,15 @@
       "stocks": [
         {
           "ticker": "VDY.TO",
-          "shares": 1875
+          "shares": 250
+        },
+        {
+          "ticker": "XEU.TO",
+          "name": "XEU.TO",
+          "shares": 1645
         }
       ],
-      "cash": 2677,
+      "cash": 1644,
       "currency": "CAD"
     },
     {
@@ -92,10 +97,14 @@
         {
           "ticker": "XDIV.TO",
           "name": "XDIV.TO",
-          "shares": 2365
+          "shares": 0
+        },
+        {
+          "ticker": "VDY.TO",
+          "shares": 1460
         }
       ],
-      "cash": 5125.52,
+      "cash": 1345.97,
       "currency": "CAD"
     }
   ],
