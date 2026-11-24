@@ -125,3 +125,26 @@ the trading day year-round: BC no longer changes its clocks, but Eastern
 still does. In BC wall-clock terms the reports therefore run an hour later in
 winter than in summer (e.g. the "30 minutes after the open" report is at
 7:00 AM BC in summer, 8:00 AM BC in winter).
+
+## Market status pill
+
+The top bar in `public/index.html` shows a market-status pill
+(`MarketStatus`, in the top-bar actions, so it is visible on the Portfolios
+list and in the editor). It is computed in the browser from the viewer's
+clock, in America/Toronto, the same market-time convention as the schedules.
+Regular session 9:30 AM-4:00 PM ET, Mon-Fri; early closes end 1:00 PM ET.
+
+When the US (NYSE) and Toronto (TSX) agree it shows one line ("Markets open
+· Closes in 3h 12m", "Markets closed · Opens in 2h 5m", or "Opens Mon 9:30
+AM" when the next open is a later day). When they differ it shows both
+("US closed · opens Mon 9:30 AM | TSX open · closes in 5h"). It refreshes
+every 30 seconds.
+
+Holidays and early closes live in `MARKET_HOLIDAYS_US` and
+`MARKET_HOLIDAYS_TSX` in `public/index.html`, checked against the NYSE and
+TMX calendars in Nov 2026 and covering 2026-2027. Extend the tables each
+year; a date past the tables is treated as a regular weekday. The logic is
+pure functions (`exchangeStatus`, `etParts`, `marketSegment`) with no
+network dependency, so a Yahoo outage cannot break it. Verified against
+fixed instants (regular open/close, weekends, US-only and TSX-only holidays,
+early closes, split Christmas week) before merging.
