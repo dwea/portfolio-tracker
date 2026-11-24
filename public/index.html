@@ -88,6 +88,11 @@
     .sticky-header { position: sticky; top: 0; z-index: 100; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
     .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.75rem; flex-wrap: wrap; gap: 0.4rem; border-bottom: 1px solid #e5e7eb; }
     .top-bar-actions { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+    .market-status { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; font-weight: 500; color: #444; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 999px; padding: 0.2rem 0.6rem; white-space: nowrap; }
+    .ms-seg { display: inline-flex; align-items: center; gap: 0.3rem; }
+    .ms-dot { width: 7px; height: 7px; border-radius: 50%; background: #9ca3af; flex: none; }
+    .ms-dot.open { background: #16a34a; }
+    .ms-dot.closed { background: #9ca3af; }
     .editor-tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 1px solid #ddd; background: #fff; }
     .editor-tab-btn { padding: 0.35rem 0.9rem; border: none; background: none; font-family: inherit; font-size: 0.8rem; font-weight: 500; color: #666; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
     .editor-tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
@@ -592,6 +597,130 @@
             );
           })}
         </svg>
+      );
+    }
+
+    // ── MARKET STATUS (logic) ──────────────────────────────────────────
+    // Clock-based market hours for the US (NYSE) and Toronto (TSX) exchanges.
+    // Regular session 9:30 AM-4:00 PM ET, Mon-Fri. Holidays and early closes
+    // (1:00 PM ET) come from the tables below, checked against the NYSE
+    // holiday calendar and the TMX calendar in Nov 2026. Extend the tables
+    // each year; a date past the tables is treated as a regular weekday.
+    const MARKET_TZ = 'America/Toronto';
+    const MARKET_OPEN_MIN = 9 * 60 + 30;        // 9:30 AM ET
+    const MARKET_CLOSE_MIN = 16 * 60;           // 4:00 PM ET
+    const MARKET_EARLY_CLOSE_MIN = 13 * 60;     // 1:00 PM ET
+
+    // 'YYYY-MM-DD' -> 'closed' (full day) or 'early' (closes 1:00 PM ET)
+    const MARKET_HOLIDAYS_US = {
+      // 2026 — NYSE
+      '2026-01-01': 'closed', '2026-01-19': 'closed', '2026-02-16': 'closed',
+      '2026-04-03': 'closed', '2026-05-25': 'closed', '2026-06-19': 'closed',
+      '2026-07-03': 'closed', '2026-09-07': 'closed', '2026-11-26': 'closed',
+      '2026-11-27': 'early', '2026-12-24': 'early', '2026-12-25': 'closed',
+      // 2027 — NYSE
+      '2027-01-01': 'closed', '2027-01-18': 'closed', '2027-02-15': 'closed',
+      '2027-03-26': 'closed', '2027-05-31': 'closed', '2027-06-18': 'closed',
+      '2027-07-05': 'closed', '2027-09-06': 'closed', '2027-11-25': 'closed',
+      '2027-11-26': 'early', '2027-12-24': 'closed',
+    };
+    const MARKET_HOLIDAYS_TSX = {
+      // 2026 — TMX
+      '2026-01-01': 'closed', '2026-02-16': 'closed', '2026-04-03': 'closed',
+      '2026-05-18': 'closed', '2026-07-01': 'closed', '2026-08-03': 'closed',
+      '2026-09-07': 'closed', '2026-10-12': 'closed', '2026-12-24': 'early',
+      '2026-12-25': 'closed', '2026-12-28': 'closed',
+      // 2027 — TMX (standing holiday rules; official 2027 calendar unreleased at time of writing)
+      '2027-01-01': 'closed', '2027-02-15': 'closed', '2027-03-26': 'closed',
+      '2027-05-24': 'closed', '2027-07-01': 'closed', '2027-08-02': 'closed',
+      '2027-09-06': 'closed', '2027-10-11': 'closed', '2027-12-24': 'early',
+      '2027-12-27': 'closed', '2027-12-28': 'closed',
+    };
+
+    const etFmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: MARKET_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+      weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: false,
+    });
+    const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    function etParts(date) {
+      const parts = {};
+      for (const p of etFmt.formatToParts(date)) parts[p.type] = p.value;
+      const hour = parseInt(parts.hour, 10) % 24; // midnight can read as 24
+      return {
+        dateStr: parts.year + '-' + parts.month + '-' + parts.day,
+        weekday: WEEKDAY_SHORT.indexOf(parts.weekday),
+        minutes: hour * 60 + parseInt(parts.minute, 10),
+      };
+    }
+    function dayKind(table, dateStr, weekday) {
+      if (weekday === 0 || weekday === 6) return 'weekend';
+      return table[dateStr] || 'open'; // 'closed' | 'early' | 'open'
+    }
+    // { open, early, event: 'closes'|'opens', inMin (today only), dayOffset, weekday }
+    function exchangeStatus(table, now) {
+      const p = etParts(now);
+      const todayKind = dayKind(table, p.dateStr, p.weekday);
+      const closeMin = todayKind === 'early' ? MARKET_EARLY_CLOSE_MIN : MARKET_CLOSE_MIN;
+      if (todayKind === 'open' || todayKind === 'early') {
+        if (p.minutes >= MARKET_OPEN_MIN && p.minutes < closeMin)
+          return { open: true, early: todayKind === 'early', event: 'closes', inMin: closeMin - p.minutes, dayOffset: 0 };
+        if (p.minutes < MARKET_OPEN_MIN)
+          return { open: false, early: false, event: 'opens', inMin: MARKET_OPEN_MIN - p.minutes, dayOffset: 0 };
+      }
+      // Closed today (weekend, holiday, or after the close): scan forward on
+      // the calendar for the next trading day. Calendar math, not clock math,
+      // so DST transitions cannot shift the date.
+      const parts = p.dateStr.split('-').map(Number);
+      const base = Date.UTC(parts[0], parts[1] - 1, parts[2]);
+      for (let d = 1; d <= 10; d++) {
+        const t = new Date(base + d * 86400000);
+        const ds = t.toISOString().slice(0, 10);
+        const kind = dayKind(table, ds, t.getUTCDay());
+        if (kind === 'open' || kind === 'early')
+          return { open: false, early: kind === 'early', event: 'opens', inMin: null, dayOffset: d, weekday: t.getUTCDay() };
+      }
+      return { open: false, early: false, event: 'opens', inMin: null, dayOffset: null };
+    }
+    function fmtInMin(inMin) {
+      if (inMin == null) return '';
+      if (inMin < 60) return 'in ' + inMin + 'm';
+      const h = Math.floor(inMin / 60), m = inMin % 60;
+      return m ? 'in ' + h + 'h ' + m + 'm' : 'in ' + h + 'h';
+    }
+    function marketSegment(label, st) {
+      if (st.open)
+        return label + ' open \u00b7 closes ' + fmtInMin(st.inMin) + (st.early ? ' (early 1 PM)' : '');
+      if (st.dayOffset === 0)
+        return label + ' closed \u00b7 opens ' + fmtInMin(st.inMin);
+      return label + ' closed \u00b7 opens ' + WEEKDAY_SHORT[st.weekday] + ' 9:30 AM';
+    }
+    // ── end market status logic ──
+
+    function MarketStatus() {
+      const [now, setNow] = useState(() => new Date());
+      useEffect(() => {
+        const id = setInterval(() => setNow(new Date()), 30000);
+        return () => clearInterval(id);
+      }, []);
+      const us = exchangeStatus(MARKET_HOLIDAYS_US, now);
+      const tsx = exchangeStatus(MARKET_HOLIDAYS_TSX, now);
+      const same = us.open === tsx.open && us.inMin === tsx.inMin && us.dayOffset === tsx.dayOffset && us.early === tsx.early;
+      if (same) {
+        const text = us.open
+          ? 'Markets open \u00b7 Closes ' + fmtInMin(us.inMin) + (us.early ? ' (early close 1:00 PM)' : '')
+          : 'Markets closed \u00b7 Opens ' + (us.dayOffset === 0 ? fmtInMin(us.inMin) : WEEKDAY_SHORT[us.weekday] + ' 9:30 AM');
+        return (
+          <span className="market-status" title="US (NYSE) and Toronto (TSX) hours, 9:30 AM-4:00 PM ET">
+            <span className={'ms-dot ' + (us.open ? 'open' : 'closed')} />{text}
+          </span>
+        );
+      }
+      return (
+        <span className="market-status" title="US (NYSE) and Toronto (TSX) hours, 9:30 AM-4:00 PM ET">
+          <span className="ms-seg"><span className={'ms-dot ' + (us.open ? 'open' : 'closed')} />{marketSegment('US', us)}</span>
+          <span aria-hidden="true">|</span>
+          <span className="ms-seg"><span className={'ms-dot ' + (tsx.open ? 'open' : 'closed')} />{marketSegment('TSX', tsx)}</span>
+        </span>
       );
     }
 
@@ -1556,6 +1685,7 @@
             )}
           </div>
           <div className="top-bar-actions">
+            <MarketStatus />
             {!config && <button className="btn btn-secondary" onClick={newConfig}>New</button>}
             {!config && <button className="btn btn-secondary" onClick={loadJSON}>Open</button>}
             {config && <button className="btn btn-secondary" title="Refresh prices &amp; rebalance data" onClick={() => { setRebalanceState({}); config.accounts.forEach((_, i) => analyzeRebalance(i)); }}>↻ Refresh</button>}
