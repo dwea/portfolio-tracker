@@ -5,7 +5,12 @@
 // This only works when the account's holdings didn't change between the closest
 // snapshot before and after the gap — verify that manually before adding a case below.
 // Each entry says which account is missing which date, and which existing snapshot
-// to copy the holdings structure (tickers/shares/cash) from.
+// to copy the holdings structure (tickers/shares/cash) from. Dates that already
+// have a snapshot for the job's report are skipped, so re-running is safe.
+//
+// Jobs are scoped by (report, account) — account names are not unique across
+// reports — and the script requires the report column added by the PR #5
+// migration (scripts/migrate-history-report-keys.py).
 //
 // Usage: npx tsx scripts/restore-missing-days.ts
 import initSqlJs from 'sql.js';
@@ -23,6 +28,13 @@ const RESTORE_JOBS = [
   { account: 'Registered-3', report: 'report-b', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
   { account: 'Registered-4', report: 'report-b', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
   { account: 'Non-registered', report: 'report-b', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
+  // Mum Report's TFSA, Nov 23-27, 2026: XEU.TO was added to the account on
+  // Nov 23, but until the report-key fix (PR #5) landed on Nov 28 both
+  // reports shared one 'TFSA' history row per day, and Report A's writes won
+  // those days — Mum's snapshots were overwritten and never preserved. Her
+  // holdings did not change between the Nov 23 edit (VDY 250, XEU 1645, cash
+  // 1644) and her first surviving snapshot, so that snapshot is the template.
+  { account: 'TFSA', report: 'mum-report', missingDates: ['2026-11-23', '2026-11-24', '2026-11-25', '2026-11-26', '2026-11-27'], templateDate: 'latest' },
 ];
 
 function delay(ms: number): Promise<void> {
@@ -74,14 +86,20 @@ async function main() {
 
   // Gather every ticker across every template snapshot we're about to copy from.
   const tickersToFetch = new Set<string>();
+  const jobKey = (job: (typeof RESTORE_JOBS)[number]) => `${job.report}:${job.account}`;
   const templates: Record<string, any[]> = {};
   for (const job of RESTORE_JOBS) {
-    const res = db.exec(
-      `SELECT snapshot FROM daily_snapshots WHERE account_name = '${job.account.replace(/'/g, "''")}' AND date = '${job.templateDate}'`
-    );
-    if (res.length === 0) throw new Error(`No template snapshot found for ${job.account} on ${job.templateDate}`);
+    const account = job.account.replace(/'/g, "''");
+    const res = job.templateDate === 'latest'
+      ? db.exec(
+          `SELECT snapshot FROM daily_snapshots WHERE account_name = '${account}' AND report = '${job.report}' ORDER BY date DESC, id DESC LIMIT 1`
+        )
+      : db.exec(
+          `SELECT snapshot FROM daily_snapshots WHERE account_name = '${account}' AND report = '${job.report}' AND date = '${job.templateDate}'`
+        );
+    if (res.length === 0 || res[0].values.length === 0) throw new Error(`No template snapshot found for ${job.report} / ${job.account} (${job.templateDate})`);
     const holdings = JSON.parse(res[0].values[0][0] as string);
-    templates[job.account] = holdings;
+    templates[jobKey(job)] = holdings;
     holdings.forEach((h: any) => {
       const displayTicker = h.displayTicker || h.ticker;
       if (displayTicker && displayTicker !== 'Cash' && displayTicker !== 'CASH') {
@@ -115,16 +133,25 @@ async function main() {
   const currencyByAccount: Record<string, string> = {};
   for (const job of RESTORE_JOBS) {
     const res = db.exec(
-      `SELECT account_currency FROM daily_snapshots WHERE account_name = '${job.account.replace(/'/g, "''")}' LIMIT 1`
+      `SELECT account_currency FROM daily_snapshots WHERE account_name = '${job.account.replace(/'/g, "''")}' AND report = '${job.report}' LIMIT 1`
     );
-    currencyByAccount[job.account] = (res[0]?.values[0]?.[0] as string) || 'CAD';
+    currencyByAccount[jobKey(job)] = (res[0]?.values[0]?.[0] as string) || 'CAD';
   }
 
   let inserted = 0;
+  let skipped = 0;
   for (const job of RESTORE_JOBS) {
-    const accountCurrency = currencyByAccount[job.account];
+    const accountCurrency = currencyByAccount[jobKey(job)];
     for (const date of job.missingDates) {
-      const holdings = JSON.parse(JSON.stringify(templates[job.account])); // deep copy per date
+      const existing = db.exec(
+        `SELECT COUNT(*) FROM daily_snapshots WHERE account_name = '${job.account.replace(/'/g, "''")}' AND report = '${job.report}' AND date = '${date}'`
+      );
+      if ((existing[0]?.values[0]?.[0] as number) > 0) {
+        console.log(`– ${job.report} / ${job.account} / ${date} already has a snapshot, skipping`);
+        skipped++;
+        continue;
+      }
+      const holdings = JSON.parse(JSON.stringify(templates[jobKey(job)])); // deep copy per date
       let cashValue = 0;
       let nonCashTotal = 0;
       let anyMissing = false;
@@ -171,11 +198,11 @@ async function main() {
         JSON.stringify(holdings)
       );
       inserted++;
-      console.log(`✓ Restored ${job.account} / ${date}${anyMissing ? ' (partial)' : ''}`);
+      console.log(`✓ Restored ${job.report} / ${job.account} / ${date}${anyMissing ? ' (partial)' : ''}`);
     }
   }
 
-  console.log(`\nDone. Inserted ${inserted} reconstructed rows.`);
+  console.log(`\nDone. Inserted ${inserted} reconstructed rows, skipped ${skipped} that already existed.`);
 }
 
 main().catch((e) => {
