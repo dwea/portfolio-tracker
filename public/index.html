@@ -292,6 +292,7 @@
             : (baselineTotal > 0 ? (totalGrowth[idx] / baselineTotal) * 100 : 0),
         holdingsValue: point.holdings.map(h => ({
           ticker: h.ticker,
+          shares: h.shares,
           value: mode === 'dollar' ? tickerGrowth[h.ticker][idx]
             : mode === 'value' ? tickerValue[h.ticker][idx]
             : tickerPercent[h.ticker][idx],
@@ -321,6 +322,27 @@
       });
 
       return { points, tickers, tickerEvents };
+    }
+
+    // A holding's line covers only the days it was actually held (shares > 0).
+    // Sold holdings stay in the config at 0 shares, and without this their
+    // lines would run on to the right edge tracking a price Dave no longer
+    // owns. Returns segments of point indices — one per held stretch — so a
+    // sale to zero ends the line and a later rebuy starts a new one.
+    function heldSegments(points, ticker) {
+      const segments = [];
+      let current = [];
+      points.forEach((point, idx) => {
+        const h = point.holdingsValue.find(hh => hh.ticker === ticker);
+        if (h !== undefined && h.shares > 0) {
+          current.push(idx);
+        } else if (current.length) {
+          segments.push(current);
+          current = [];
+        }
+      });
+      if (current.length) segments.push(current);
+      return segments;
     }
 
     function formatMoney(value, currency) {
@@ -381,10 +403,13 @@
           maxValue = Math.max(maxValue, p.totalValue);
         }
         p.holdingsValue.forEach(h => {
-          minValue = Math.min(minValue, h.value);
-          maxValue = Math.max(maxValue, h.value);
+          if (h.shares > 0) {
+            minValue = Math.min(minValue, h.value);
+            maxValue = Math.max(maxValue, h.value);
+          }
         });
       });
+      if (!isFinite(minValue)) { minValue = 0; maxValue = 0; }
       const valueRange = (maxValue - minValue) || 10;
       const pad = valueRange * 0.15;
       const yMin = minValue - pad, yMax = maxValue + pad;
@@ -398,23 +423,24 @@
         const valueToY = (v) => marginTop + chartHeight - ((v - yMin) / (yMax - yMin)) * chartHeight;
 
         const tickerSeries = tickers.map(ticker => {
-          const pts = [];
-          let lastValue = 0;
-          points.forEach((point, idx) => {
-            const h = point.holdingsValue.find(hh => hh.ticker === ticker);
-            if (h !== undefined) {
-              pts.push([indexToX(idx), valueToY(h.value)]);
-              lastValue = h.value;
-            }
-          });
-          return pts.length ? { key: ticker, pts, color: colorFor(ticker), isTotal: false, lastValue,
-            endX: pts[pts.length - 1][0], endY: pts[pts.length - 1][1] } : null;
+          const idxSegments = heldSegments(points, ticker);
+          if (!idxSegments.length) return null;
+          const segments = idxSegments.map(idxs => idxs.map(idx => {
+            const h = points[idx].holdingsValue.find(hh => hh.ticker === ticker);
+            return [indexToX(idx), valueToY(h.value)];
+          }));
+          const lastIdxs = idxSegments[idxSegments.length - 1];
+          const lastValue = points[lastIdxs[lastIdxs.length - 1]].holdingsValue.find(hh => hh.ticker === ticker).value;
+          const lastSeg = segments[segments.length - 1];
+          const endPt = lastSeg[lastSeg.length - 1];
+          return { key: ticker, segments, color: colorFor(ticker), isTotal: false, lastValue,
+            endX: endPt[0], endY: endPt[1] };
         }).filter(Boolean);
 
         const totalSeries = showTotal ? (() => {
           const totalPts = points.map((point, idx) => [indexToX(idx), valueToY(point.totalValue)]);
           const totalLastValue = points[points.length - 1].totalValue;
-          return { key: 'TOTAL', pts: totalPts, color: '#1a1a1a', isTotal: true, lastValue: totalLastValue,
+          return { key: 'TOTAL', segments: [totalPts], color: '#1a1a1a', isTotal: true, lastValue: totalLastValue,
             endX: totalPts[totalPts.length - 1][0], endY: totalPts[totalPts.length - 1][1] };
         })() : null;
 
@@ -528,8 +554,12 @@
 
           {allSeries.map(s => (
             <g key={s.key} onMouseEnter={() => setHovered(s.key)} onMouseLeave={() => setHovered(null)} style={{cursor: 'pointer'}}>
-              <polyline points={s.pts.map(p => p.join(',')).join(' ')} fill="none" stroke="transparent" strokeWidth="14" />
-              <polyline points={s.pts.map(p => p.join(',')).join(' ')} fill="none" stroke={hovered === s.key ? '#000' : s.color} strokeWidth={widthFor(s.key, s.isTotal)} opacity={lineOpacityFor(s.key, s.isTotal)} />
+              {s.segments.map((seg, si) => (
+                <polyline key={'hit' + si} points={seg.map(p => p.join(',')).join(' ')} fill="none" stroke="transparent" strokeWidth="14" />
+              ))}
+              {s.segments.map((seg, si) => (
+                <polyline key={'line' + si} points={seg.map(p => p.join(',')).join(' ')} fill="none" stroke={hovered === s.key ? '#000' : s.color} strokeWidth={widthFor(s.key, s.isTotal)} opacity={lineOpacityFor(s.key, s.isTotal)} />
+              ))}
             </g>
           ))}
 
