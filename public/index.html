@@ -580,21 +580,31 @@
             const valueColor = row.lastValue >= 0 ? '#16a34a' : '#b91c1c';
             const pillColor = row.lastValue >= 0 ? '#dcfce7' : '#fee2e2'; // light green / light red
             const labelWidth = estimateTextWidth(displayKey(row.key));
+            // One transparent hit rect per row does all the hover work. An SVG
+            // <text> is only hit-testable on its painted glyphs, so handlers on
+            // the label text flicker as the pointer crosses gaps between
+            // letters; everything else in the row is pointer-events:none so the
+            // pointer can only ever land on this rect. Rows are spaced at least
+            // labelLineHeight + 1 apart, so a rect of exactly that height tiles
+            // with its neighbours — no overlap, no dead gap.
+            const hitX = valueRightX - valueColWidth - 6;
+            const hitWidth = (labelLeftX + labelWidth + 6) - hitX;
             return (
               <g key={'row' + row.key}>
+                <rect x={hitX} y={row.labelY - 10} width={hitWidth} height={labelLineHeight + 1} fill="transparent" style={{cursor: 'pointer'}}
+                      onMouseEnter={() => setHovered(row.key)} onMouseLeave={() => setHovered(null)} />
                 {isHovered && movedDistance > 6 && (
-                  <line x1={row.endX} y1={row.endY} x2={valueRightX - valueColWidth - 4} y2={row.labelY - 5} stroke={row.color} strokeWidth="0.5" opacity="0.3" />
+                  <line x1={row.endX} y1={row.endY} x2={valueRightX - valueColWidth - 4} y2={row.labelY - 5} stroke={row.color} strokeWidth="0.5" opacity="0.3" pointerEvents="none" />
                 )}
-                <rect x={valueRightX - valueColWidth - 4} y={row.labelY - 9} width={valueColWidth + 8} height="16" fill="white" opacity={valueOpacityFor(row.key)} />
-                <text x={valueRightX} y={row.labelY} textAnchor="end" fontSize="10" fontFamily="Arial, Helvetica, sans-serif" fill={valueColor} opacity={valueOpacityFor(row.key)}>{valueStr}</text>
+                <rect x={valueRightX - valueColWidth - 4} y={row.labelY - 8} width={valueColWidth + 8} height="12" fill="white" opacity={valueOpacityFor(row.key)} pointerEvents="none" />
+                <text x={valueRightX} y={row.labelY} textAnchor="end" fontSize="10" fontFamily="Arial, Helvetica, sans-serif" fill={valueColor} opacity={valueOpacityFor(row.key)} pointerEvents="none">{valueStr}</text>
 
                 {isHovered && (
-                  <rect x={labelLeftX - 6} y={row.labelY - 10} width={labelWidth + 12} height="16" rx="8" fill={pillColor} />
+                  <rect x={labelLeftX - 6} y={row.labelY - 10} width={labelWidth + 12} height="14" rx="7" fill={pillColor} pointerEvents="none" />
                 )}
                 <text x={labelLeftX} y={row.labelY} fontSize="11" fontWeight="bold" fontFamily="Arial, Helvetica, sans-serif"
                       fill={row.isTotal || isHovered ? '#1a1a1a' : '#4b5563'}
-                      opacity={row.isTotal ? 1 : opacityFor(row.key, false)} style={{cursor: 'pointer'}}
-                      onMouseEnter={() => setHovered(row.key)} onMouseLeave={() => setHovered(null)}>
+                      opacity={row.isTotal ? 1 : opacityFor(row.key, false)} pointerEvents="none">
                   {displayKey(row.key)}
                 </text>
               </g>
