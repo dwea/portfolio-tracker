@@ -7,7 +7,7 @@ import { calculateAccount } from './calculator.js';
 import { formatShort, formatDetailed, formatRebalanceReport } from './formatter.js';
 import { generateSparkline } from './sparkline.js';
 import { generateAccountChart } from './chart-generator.js';
-import { insertSnapshot, buildSnapshotHoldings } from './db.js';
+import { insertSnapshot, buildSnapshotHoldings, reportSlug } from './db.js';
 
 // Redirect all console.log to stderr so only the formatted message goes to stdout
 const origLog = console.log;
@@ -65,7 +65,7 @@ async function runPreview(): Promise<void> {
     const timestamp = now.toISOString();
     for (const account of accounts) {
       await insertSnapshot(
-        dateStr, timestamp, account.name, account.currency, account.total,
+        dateStr, timestamp, account.name, reportSlug(config.reportName), account.currency, account.total,
         grandTotal, grandTotalChange, grandTotalChangePercent,
         JSON.stringify(buildSnapshotHoldings(account))
       );
@@ -75,7 +75,7 @@ async function runPreview(): Promise<void> {
     const charts = [];
     for (const account of config.accounts) {
       try {
-        const url = await generateAccountChart(null, account.name, account.currency || 'CAD', 30);
+        const url = await generateAccountChart(null, account.name, account.currency || 'CAD', 30, reportSlug(config.reportName));
         charts.push({ name: account.name, url });
       } catch (err: any) {
         charts.push({ name: account.name, error: err.message });
