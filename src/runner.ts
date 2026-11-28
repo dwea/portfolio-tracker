@@ -150,6 +150,9 @@ function encryptText(plaintext: string, passphrase: string): string {
 
 async function generateAndSendReport(config: Report, schedule: Schedule, testMode: boolean = false): Promise<void> {
   const { format, chart = 'none' } = schedule;
+  // Same slug as the report file and last-report-<slug>.txt — also the key
+  // history rows are stored under (see db.ts reportSlug).
+  const reportSlug = config.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-');
   await log(`Generating ${format} report: ${config.reportName}${chart !== 'none' ? ` (chart: ${chart})` : ''}${testMode ? ' (TEST MODE)' : ''}`);
 
   let reportData: ReportData;
@@ -182,6 +185,7 @@ async function generateAndSendReport(config: Report, schedule: Schedule, testMod
           dateStr,
           timestamp,
           account.name,
+          reportSlug,
           account.currency,
           account.total,
           reportData.grandTotal,
@@ -225,7 +229,8 @@ async function generateAndSendReport(config: Report, schedule: Schedule, testMod
             null, // db parameter (will be initialized in chart-generator)
             account.name,
             account.currency,
-            30
+            30,
+            reportSlug
           );
         }
         await log(`✓ Generated ${reportData.accounts.length} performance chart(s)`);
@@ -245,7 +250,6 @@ async function generateAndSendReport(config: Report, schedule: Schedule, testMod
     // public repo; the push job decides where it goes. When
     // PT_REPORTS_PASSPHRASE is set, an encrypted copy is written alongside
     // it, and only the ciphertext is pushed to the public repo.
-    const reportSlug = config.reportName.toLowerCase().replace(/[^a-z0-9]/g, '-');
     const perReportPath = join(dataDir, `last-report-${reportSlug}.txt`);
     await writeFile(perReportPath, message);
     await log(`Wrote report preview to ${perReportPath}`);

@@ -345,7 +345,8 @@ export async function generateAccountChart(
   _db: any, // Unused, for API compatibility
   accountName: string,
   accountCurrency: string,
-  days: number = 30
+  days: number = 30,
+  report: string | null = null
 ): Promise<string> {
   const chartsDir = path.join(__dirname, '../public/charts');
   if (!fs.existsSync(chartsDir)) {
@@ -353,7 +354,7 @@ export async function generateAccountChart(
   }
 
   try {
-    const history = await getHistory(accountName, days);
+    const history = await getHistory(accountName, days, report);
 
     if (history.length === 0) {
       // Return a simple placeholder chart

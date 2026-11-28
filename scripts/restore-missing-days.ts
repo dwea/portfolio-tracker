@@ -18,11 +18,11 @@ const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 const DB_PATH = join(process.cwd(), 'data', 'portfolio.db');
 
 const RESTORE_JOBS = [
-  { account: 'Registered-1', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
-  { account: 'Registered-2', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
-  { account: 'Registered-3', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
-  { account: 'Registered-4', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
-  { account: 'Non-registered', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
+  { account: 'Registered-1', report: 'report-b', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
+  { account: 'Registered-2', report: 'report-b', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
+  { account: 'Registered-3', report: 'report-b', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
+  { account: 'Registered-4', report: 'report-b', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
+  { account: 'Non-registered', report: 'report-b', missingDates: ['2026-07-16', '2026-07-20'], templateDate: '2026-07-15' },
 ];
 
 function delay(ms: number): Promise<void> {
@@ -162,6 +162,7 @@ async function main() {
         date,
         `${date}T16:00:00.000Z`, // approximate market-close timestamp for a reconstructed day
         job.account,
+        job.report,
         accountCurrency,
         accountTotal,
         accountTotal, // portfolio_total_cad isn't read anywhere; single-account approximation is fine

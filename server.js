@@ -10,7 +10,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import crypto from 'crypto';
 import cron from 'node-cron';
-import { getHistory, insertSnapshot, buildSnapshotHoldings } from './src/db.js';
+import { getHistory, insertSnapshot, buildSnapshotHoldings, reportSlug } from './src/db.js';
 
 const execAsync = promisify(exec);
 const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from .env
@@ -777,7 +777,7 @@ app.get('/api/history', async (req, res) => {
       return res.status(400).json({ error: 'account query parameter required' });
     }
 
-    const history = await getHistory(String(account), parseDaysParam(days));
+    const history = await getHistory(String(account), parseDaysParam(days), req.query.report ? reportSlug(String(req.query.report)) : null);
     res.json(history);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -818,7 +818,7 @@ app.get('/api/chart-data/:filename', async (req, res) => {
 
       for (const account of liveAccounts) {
         await insertSnapshot(
-          dateStr, timestamp, account.name, account.currency, account.total,
+          dateStr, timestamp, account.name, reportSlug(reportDef.reportName), account.currency, account.total,
           grandTotal, grandTotalChange, grandTotalChangePercent,
           JSON.stringify(buildSnapshotHoldings(account))
         );
@@ -829,7 +829,7 @@ app.get('/api/chart-data/:filename', async (req, res) => {
 
     const charts = [];
     for (const account of reportDef.accounts) {
-      const history = await getHistory(account.name, days);
+      const history = await getHistory(account.name, days, reportSlug(reportDef.reportName));
       charts.push({ name: account.name, currency: account.currency || 'CAD', history });
     }
 
