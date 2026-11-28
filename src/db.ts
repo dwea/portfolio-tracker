@@ -20,6 +20,14 @@ export function buildSnapshotHoldings(account: AccountData): HoldingData[] {
   return [...account.holdings, cashHolding];
 }
 
+// History rows are keyed by (report, account), not account name alone: account
+// names are not unique across reports (both Report A and Mum Report have a
+// TFSA), so keying by name alone mixes two portfolios into one series. The
+// report key is the same slug the report files and last-report-*.txt use.
+export function reportSlug(reportName: string): string {
+  return reportName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+}
+
 let db: SqlJsDatabase | null = null;
 let SQL: any = null;
 const DB_PATH = join(process.cwd(), 'data', 'portfolio.db');
@@ -81,6 +89,7 @@ async function initializeDatabase(): Promise<void> {
     db = new SQL.Database();
     createSchema();
   }
+  if (ensureReportColumn(db)) saveDatabase();
 }
 
 function createSchema(): void {
@@ -92,6 +101,7 @@ function createSchema(): void {
       date TEXT NOT NULL,
       timestamp TEXT NOT NULL,
       account_name TEXT NOT NULL,
+      report TEXT NOT NULL DEFAULT '',
       account_currency TEXT,
       account_total REAL,
       portfolio_total_cad REAL,
@@ -103,6 +113,19 @@ function createSchema(): void {
   `);
 
   saveDatabase();
+}
+
+// Older databases predate the report column — add it in place. Returns true
+// when it altered the table (so the caller knows to persist). Rows written
+// before the column existed keep report '' until the one-off backfill
+// (scripts/migrate-history-report-keys.py) attributes them.
+function ensureReportColumn(database: SqlJsDatabase): boolean {
+  const cols = database.exec(`PRAGMA table_info(daily_snapshots)`);
+  if (cols.length === 0) return false; // no table yet — createSchema handles it
+  const names = cols[0].values.map((row: any[]) => row[1]);
+  if (names.includes('report')) return false;
+  database.run(`ALTER TABLE daily_snapshots ADD COLUMN report TEXT NOT NULL DEFAULT ''`);
+  return true;
 }
 
 function saveDatabase(): void {
@@ -123,6 +146,7 @@ export async function insertSnapshot(
   date: string,
   timestamp: string,
   accountName: string,
+  report: string,
   accountCurrency: string,
   accountTotal: number,
   portfolioTotalCad: number,
@@ -148,23 +172,25 @@ export async function insertSnapshot(
       db = new SQL.Database();
       createSchema();
     }
+    ensureReportColumn(db);
 
-    // A given (date, account) should have exactly one snapshot — replace any existing
+    // A given (date, report, account) should have exactly one snapshot — replace any existing
     // row for this day rather than accumulating one per report run, so re-running
     // (e.g. viewing charts intra-day) always reflects the latest values for "today".
     db.run(
-      `DELETE FROM daily_snapshots WHERE date = ? AND account_name = ?`,
-      [date, accountName]
+      `DELETE FROM daily_snapshots WHERE date = ? AND account_name = ? AND report = ?`,
+      [date, accountName, report]
     );
     db.run(
       `INSERT INTO daily_snapshots
-       (date, timestamp, account_name, account_currency, account_total,
+       (date, timestamp, account_name, report, account_currency, account_total,
         portfolio_total_cad, daily_change, daily_change_percent, snapshot)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         date,
         timestamp,
         accountName,
+        report,
         accountCurrency,
         accountTotal,
         portfolioTotalCad,
@@ -184,7 +210,8 @@ export async function insertSnapshot(
 
 export async function getHistory(
   accountName: string,
-  days: number = 30
+  days: number = 30,
+  report: string | null = null
 ): Promise<Array<{ date: string; accountTotal: number; snapshot: any }>> {
   if (!db) {
     await initializeDatabase();
@@ -194,10 +221,16 @@ export async function getHistory(
 
   try {
     // strftime('%w', date) is 0=Sunday..6=Saturday — drop weekends since markets
-    // are closed and those points would just flatline the chart.
+    // are closed and those points would just flatline the chart. The report
+    // filter matters whenever two reports share an account name (TFSA);
+    // report = null (the legacy /api/history endpoint) reads across reports.
+    const reportFilter = report !== null
+      ? `AND report = '${report.replace(/'/g, "''")}'`
+      : '';
     const results = db.exec(
       `SELECT date, account_total, snapshot FROM daily_snapshots
        WHERE account_name = '${accountName.replace(/'/g, "''")}'
+       ${reportFilter}
        AND date >= date('now', '-${days} days')
        AND strftime('%w', date) NOT IN ('0', '6')
        ORDER BY date ASC`
