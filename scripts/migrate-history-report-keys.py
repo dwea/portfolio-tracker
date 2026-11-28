@@ -11,10 +11,11 @@ on rows written before that change.
 Attribution:
   - Accounts whose name belongs to exactly one report are mapped by name.
   - TFSA rows are attributed by their snapshot's ticker fingerprint:
-    Report A's TFSA holds XDIV.TO + XEF.TO + XEU.TO; Mum's TFSA holds only
-    VDY.TO (plus the synthetic Cash row). A TFSA row matching neither
-    fingerprint is left unattributed (report '') and listed, never guessed —
-    unattributed rows are simply not shown by the new code.
+    XEF.TO is the discriminator — Report A's TFSA has always held it (with
+    XDIV.TO and XEU.TO), Mum's TFSA never has (VDY.TO only, plus XEU.TO
+    from Nov 23, 2026). A TFSA row matching neither fingerprint is left
+    unattributed (report '') and listed, never guessed — unattributed rows
+    are simply not shown by the new code.
 
 Run it ONCE on the mini, with the server stopped, after pulling the
 report-key change:
@@ -99,9 +100,9 @@ def main() -> None:
     unknown = []
     for row_id, snap in tfsa_rows:
         tickers = tickers_of(snap)
-        if {"XDIV.TO", "XEF.TO", "XEU.TO"} <= tickers:
+        if {"XDIV.TO", "XEF.TO"} <= tickers:
             report = "report-a"
-        elif tickers <= {"Cash", "CASH", "VDY.TO"} and "VDY.TO" in tickers:
+        elif "XEF.TO" not in tickers and tickers & {"VDY.TO", "XEU.TO"}:
             report = "mum-report"
         else:
             unknown.append((row_id, sorted(tickers)))
